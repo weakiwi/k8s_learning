@@ -5,7 +5,7 @@ getId() {
 	tmpArr=($tmpResult)
 	for i in ${tmpArr[@]}
 	do
-		echo "${i}" | grep -q "$2"
+		echo "${i}" | grep -iq "$2"
 		if [[ $? -eq 0 ]]
 		then
 			echo $i
@@ -13,12 +13,36 @@ getId() {
 	done
 }
 
+getAll() {
+	tmpStr="empty"
+	kubectl --kubeconfig /etc/kubernetes/admin.conf get $1|while read line;do
+		echo "${line}" | grep -iq "$2"
+		if [[ $? -eq 0 ]]
+		then
+			tmpStr=`echo $line|awk '{print $1}'`
+			echo $tmpStr
+		fi
+	done
+}
+
 tmpId=$(getId $2 $3)
+if [ "$4"x == "all"x ]
+then
+	tmpId=$(getAll $2 $3)
+	if [ "$tmpId"x != "empty" ]
+	then
+		kubectl --kubeconfig /etc/kubernetes/admin.conf $1 $2 $tmpId
+	fi
+	exit
+
+fi
+
 if [ "$1"x == "describe"x ]
 then
 	for i in ${tmpId[@]}
 	do
 		kubectl --kubeconfig /etc/kubernetes/admin.conf $1 $2 $i
+		echo -e "\033[31m ############################################################## \033[0m"
 	done
 fi
 if [ "$1"x == "get"x ]
