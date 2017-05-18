@@ -32,7 +32,7 @@ then
 	tmpId=$(getAll $2 $3)
 	if [ "$tmpId"x != "empty" ]
 	then
-		kubectl --kubeconfig /etc/kubernetes/admin.conf $1 $2 $tmpId
+		kubectl --kubeconfig /etc/kubernetes/admin.conf $1 $2 $tmpId 
 		echo -e "\033[31m ############################################################## \033[0m"
 	fi
 elif [ "$lastArg"x == "show"x ]
@@ -54,9 +54,13 @@ elif [ "$1"x == "create"x ] && [ "$2"x == "all"x ]
 then
 	for file in ./*.yaml
 	do
-		kubectl --kubeconfig /etc/kubernetes/admin.conf create -f $file
+		kubectl --kubeconfig /etc/kubernetes/admin.conf create -f $file --validate=false
 		echo -e "\033[31m ############################################################## \033[0m"
 	done
-else
+elif [ "$@"x != ""x ]
+then
 	kubectl --kubeconfig /etc/kubernetes/admin.conf $@
+else
+	currPath=`pwd`
+	echo "alias kubed=\"${currPath}/kubectl_easy.sh\"" >> /etc/bashrc
 fi
