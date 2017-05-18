@@ -50,6 +50,15 @@ then
 		echo -e "\033[31m ############################################################## \033[0m"
 	done
 
+elif [ "$lastArg"x == "deleteall"x ]
+then
+	tmpall=$(getAll $2 $3)
+	for i in ${tmpall[@]}
+	do
+		kubectl --kubeconfig /etc/kubernetes/admin.conf delete $2 $i
+		echo -e "\033[31m ############################################################## \033[0m"
+	done
+
 elif [ "$1"x == "create"x ] && [ "$2"x == "all"x ]
 then
 	for file in ./*.yaml
@@ -57,7 +66,7 @@ then
 		kubectl --kubeconfig /etc/kubernetes/admin.conf create -f $file --validate=false
 		echo -e "\033[31m ############################################################## \033[0m"
 	done
-elif [ "$@"x != ""x ]
+elif [ "$1"x != ""x ]
 then
 	kubectl --kubeconfig /etc/kubernetes/admin.conf $@
 else
