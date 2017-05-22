@@ -13,10 +13,19 @@ metadata:
         labels:
           app: mysql-master
 spec:
+ # ports:
+ # - port: 3306
+ #   nodePort: 3306
+ #   targetPort: 3306
+ # clusterIP: None
+  clusterIP: 10.102.47.91
   ports:
-  - port: 3306
+  - nodePort: 30001
+    port: 3306
+    protocol: TCP
     targetPort: 3306
-  clusterIP: None
+  type: NodePort
+
   selector:
     app: mysql-master
 ---
