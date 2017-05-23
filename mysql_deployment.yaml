@@ -5,13 +5,14 @@ metadata:
 data:
   mysql-root-user: "root"
   mysql-user-pass: "root"
+  mysql-svc-name: "mysql-master"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-        name: mysql-master
-        labels:
-          app: mysql-master
+  name: mysql-master
+  labels:
+    app: mysql-master
 spec:
  # ports:
  # - port: 3306
@@ -65,7 +66,7 @@ spec:
               topologyKey: "kubernetes.io/hostname"
       containers:
       - name: mysql-ha
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         image: daocloud.io/daocloud/mysql-ha
         resources:
           requests:
@@ -122,17 +123,19 @@ spec:
                     - mysql-master
               topologyKey: "kubernetes.io/hostname"
         podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
                 matchExpressions:
-                  - key: "app"
-                    operator: In
-                    values: 
-                    - mysql-slave
-              topologyKey: "kubernetes.io/hostname"
+                - key: security
+                  operator: In
+                  values:
+                  - S2
+              topologyKey: kubernetes.io/hostname
       containers:
       - name: mysql-ha
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         image: daocloud.io/daocloud/mysql-ha
         resources:
           requests:
@@ -154,7 +157,10 @@ spec:
                 name: mysql-config
                 key: mysql-user-pass
         - name : MYSQL_PORT_3306_TCP_ADDR
-          value: "mysql-master"
+          valueFrom:
+            configMapKeyRef:
+                name: mysql-config
+                key: mysql-svc-name
         - name : MYSQL_PORT_3306_TCP_PORT
           value: "3306"
         - name : MYSQL_ENV_REPLICATION_USER
