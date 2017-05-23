@@ -13,7 +13,7 @@ metadata:
 kind: NetworkPolicy
 apiVersion: extensions/v1beta1 
 metadata:
-  name: allow-frontend
+  name: allow-master-to-slave
   namespace: myns
 spec:
   podSelector:            
@@ -28,10 +28,11 @@ spec:
         - protocol: TCP
           port: 3306
 ---
+
 kind: NetworkPolicy
 apiVersion: extensions/v1beta1 
 metadata:
-  name: allow-backend
+  name: allow-slave-to-master
   namespace: myns
 spec:
   podSelector:            
@@ -72,13 +73,10 @@ spec:
   clusterIP: 10.102.47.91
   ports:
   - port: 3306
-    name: aa
+    name: mysql-port
     protocol: TCP
     targetPort: 3306
-  - port: 3307
-    name: bb
-    protocol: TCP
-    targetPort: 3306
+    nodePort: 30015
   type: NodePort
 
   selector:
@@ -185,10 +183,10 @@ spec:
             podAffinityTerm:
               labelSelector:
                 matchExpressions:
-                - key: security
+                - key: "app"
                   operator: In
                   values:
-                  - S2
+                  - mysql-slave
               topologyKey: kubernetes.io/hostname
       containers:
       - name: mysql-ha
