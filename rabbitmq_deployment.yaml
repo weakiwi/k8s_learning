@@ -1,0 +1,157 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: myns
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: haproxy
+  namespace: myns
+  labels:
+    app: haproxy
+spec:
+ # ports:
+ # - port: 3306
+ #   nodePort: 3306
+ #   targetPort: 3306
+ # clusterIP: None
+  clusterIP: 10.102.47.92
+  ports:
+  - name: haproxy-port
+    port: 5672
+    protocol: TCP
+    targetPort: 5672
+    nodePort: 30016
+  - name: haproxy-port-2
+    port: 15672
+    protocol: TCP
+    targetPort: 15672
+    nodePort: 30017
+
+  type: NodePort
+
+  selector:
+    app: haproxy
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: rabbitmq-other
+  namespace: myns
+spec:
+  serviceName: rabbitmq
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: rabbitmq-other
+      annotations:
+        pod.alpha.kubernetes.io/initialized: "true"
+    spec:
+      containers:
+      - name: rabbitmq-ha-server
+        imagePullPolicy: IfNotPresent
+        image: daocloud.io/daocloud/rabbitmq-ha-server
+        resources:
+          requests:
+            memory: "100Mi"
+        - name : CLUSTERED
+          value: '''true'''
+        - name : CLUSTER_WITH
+          value: "rabbitmq"
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: haproxy
+  labels:
+    app: haproxy
+  namespace: myns
+spec:
+  serviceName: haproxy
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: haproxy
+      annotations:
+        pod.alpha.kubernetes.io/initialized: "true"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values: 
+                    - rabbitmq
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: haproxy
+        imagePullPolicy: IfNotPresent
+        image:  daocloud.io/daocloud/haproxy:1.4-rabbitmq
+        resources:
+          requests:
+            memory: "100Mi"
+        args:
+        - /bin/sed
+        - -i
+        - "s/rabbit/rabbitmq-/g"
+        - /usr/local/etc/haproxy/haproxy.cfg
+        ports:
+        - containerPort: 5672
+          name: port-1
+        - containerPort: 15672
+          name: port-2
+ # volumeClaimTemplates:
+ # - metadata:
+ #     name: mysql-master-data
+ #     annotations:
+ #       volume.alpha.kubernetes.io/storage-class: anything
+ #   spec:
+ #     accessModes: [ "ReadWriteOnce" ]
+ #     resources:
+ #       requests:
+ #         storage: 100Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  namespace: myns
+  labels:
+    app: rabbitmq-first
+spec:
+ # ports:
+ # - port: 3306
+ #   nodePort: 3306
+ #   targetPort: 3306
+ # clusterIP: None
+  clusterIP: None
+  selector:
+    app: rabbitmq-other
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  namespace: myns
+spec:
+  serviceName: rabbitmq
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+      annotations:
+        pod.alpha.kubernetes.io/initialized: "true"
+    spec:
+      containers:
+      - name: rabbitmq-ha-server
+        imagePullPolicy: IfNotPresent
+        image: daocloud.io/daocloud/rabbitmq-ha-server
+        resources:
+          requests:
+            memory: "100Mi"
