@@ -2,7 +2,7 @@
 
 MOUNTPATH="/var/lib/mysql"
 PVPATH="/tmp/data"
-PVCAP="200Mi"
+PVCAP="500Mi"
 PVMODE="ReadWriteOnce"
 PVNUM=3
 
@@ -14,15 +14,15 @@ kind: PersistentVolume
 apiVersion: v1
 metadata:
   name: pv${1}
-  labels:
-    type: local
+  namespace: myns
 spec:
   capacity:
     storage: ${2}
   accessModes:
     - ${3}
-  hostPath:
-    path: "${4}${1}"
+  nfs:
+    server: 192.168.2.216
+    path: "/tmp/data${1}"
 EOF
 }
 for (( i=0; i<$PVNUM ; i++ ))

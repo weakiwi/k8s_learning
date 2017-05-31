@@ -1,157 +1,292 @@
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: myns
+  name: myns1
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: haproxy
-  namespace: myns
-  labels:
-    app: haproxy
-spec:
- # ports:
- # - port: 3306
- #   nodePort: 3306
- #   targetPort: 3306
- # clusterIP: None
-  clusterIP: 10.102.47.92
-  ports:
-  - name: haproxy-port
-    port: 5672
-    protocol: TCP
-    targetPort: 5672
-    nodePort: 30016
-  - name: haproxy-port-2
-    port: 15672
-    protocol: TCP
-    targetPort: 15672
-    nodePort: 30017
-
-  type: NodePort
-
-  selector:
-    app: haproxy
----
-apiVersion: apps/v1beta1
 kind: StatefulSet
-metadata:
-  name: rabbitmq-other
-  namespace: myns
-spec:
-  serviceName: rabbitmq
-  replicas: 2
-  template:
-    metadata:
-      labels:
-        app: rabbitmq-other
-      annotations:
-        pod.alpha.kubernetes.io/initialized: "true"
-    spec:
-      containers:
-      - name: rabbitmq-ha-server
-        imagePullPolicy: IfNotPresent
-        image: daocloud.io/daocloud/rabbitmq-ha-server
-        resources:
-          requests:
-            memory: "100Mi"
-        - name : CLUSTERED
-          value: '''true'''
-        - name : CLUSTER_WITH
-          value: "rabbitmq"
----
 apiVersion: apps/v1beta1
-kind: StatefulSet
 metadata:
-  name: haproxy
-  labels:
-    app: haproxy
-  namespace: myns
+  name: rabbitmq1
+  namespace: myns1
 spec:
-  serviceName: haproxy
+  serviceName: rabbitmq1
   replicas: 1
   template:
     metadata:
       labels:
-        app: haproxy
-      annotations:
-        pod.alpha.kubernetes.io/initialized: "true"
+        app: rabbitmq1
     spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: "app"
-                    operator: In
-                    values: 
-                    - rabbitmq
-              topologyKey: "kubernetes.io/hostname"
+      volumes:
+      - name: rabbitmq1
+        persistentVolumeClaim:
+          claimName: nfs
       containers:
-      - name: haproxy
+      - name: rabbitmq
         imagePullPolicy: IfNotPresent
-        image:  daocloud.io/daocloud/haproxy:1.4-rabbitmq
-        resources:
-          requests:
-            memory: "100Mi"
-        args:
-        - /bin/sed
-        - -i
-        - "s/rabbit/rabbitmq-/g"
-        - /usr/local/etc/haproxy/haproxy.cfg
-        ports:
-        - containerPort: 5672
-          name: port-1
-        - containerPort: 15672
-          name: port-2
- # volumeClaimTemplates:
- # - metadata:
- #     name: mysql-master-data
- #     annotations:
- #       volume.alpha.kubernetes.io/storage-class: anything
- #   spec:
- #     accessModes: [ "ReadWriteOnce" ]
- #     resources:
- #       requests:
- #         storage: 100Mi
+        image: daocloud.io/daocloud/rabbitmq-ha-server:dce
+        volumeMounts:
+        - name: rabbitmq1
+          mountPath: "/var/lib/rabbitmq"
+        env:
+        - name : CLUSTERED
+          value: '''true'''
+        - name : HOSTNAME
+          value: "rabbit1"
+        - name : RABBITMQ_ERLANG_COOKIE
+          value: "passwordpassword"
+        - name : RABBITMQ_DEFAULT_USER
+          value: "admin"
+        - name : RABBITMQ_DEFAULT_PASS
+          value: "password"
+        - name : RABBITMQ_LOGS
+          value: "/var/log/rabbitmq/rabbit.log"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: rabbitmq
-  namespace: myns
+  name: rabbit1
+  namespace: myns1
   labels:
-    app: rabbitmq-first
+    app: rabbitmq1
 spec:
- # ports:
- # - port: 3306
- #   nodePort: 3306
- #   targetPort: 3306
- # clusterIP: None
+  ports:
+  - port: 5672
+    name: rabbitmq11
+    protocol: TCP
+    targetPort: 5672
+  - port: 15672
+    name: rabbitmq12
+    protocol: TCP
+    targetPort: 15672
+
   clusterIP: None
   selector:
-    app: rabbitmq-other
+    app: rabbitmq1
 ---
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
-  name: rabbitmq
-  namespace: myns
+  name: rabbitmq2
+  namespace: myns1
 spec:
-  serviceName: rabbitmq
-  replicas: 2
+  serviceName: rabbitmq2
+  replicas: 1
   template:
     metadata:
       labels:
-        app: rabbitmq
+        app: rabbitmq2
       annotations:
-        pod.alpha.kubernetes.io/initialized: "true"
+        pod.beta.kubernetes.io/init-containers: '[
+            {
+                "name": "init-rabbitmq-first",
+                "image": "busybox",
+                "command": ["sh", "-c", "until nslookup rabbit1; do echo waiting for rabbit1; sleep 2; done;"]
+            }
+        ]'
     spec:
       containers:
-      - name: rabbitmq-ha-server
+      - name: rabbitmq
         imagePullPolicy: IfNotPresent
-        image: daocloud.io/daocloud/rabbitmq-ha-server
-        resources:
-          requests:
-            memory: "100Mi"
+        image: daocloud.io/daocloud/rabbitmq-ha-server:dce
+        volumeMounts:
+        - name: rabbitmq2
+          mountPath: "/var/lib/rabbitmq"
+        env:
+        - name : CLUSTERED
+          value: '''true'''
+        - name : HOSTNAME
+          value: "rabbit2"
+        - name : CLUSTER_WITH
+          value: "rabbit1"
+        - name : RABBITMQ_ERLANG_COOKIE
+          value: "passwordpassword"
+        - name : RABBITMQ_DEFAULT_USER
+          value: "admin"
+        - name : RABBITMQ_DEFAULT_PASS
+          value: "password"
+        - name : RABBITMQ_LOGS
+          value: "/var/log/rabbitmq/rabbit.log"
+        - name : ADDRESS
+          value: "rabbit1:5672,rabbit1:15672"
+      volumes:
+      - name: rabbitmq2
+        persistentVolumeClaim:
+          claimName: nfs1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbit2
+  namespace: myns1
+  labels:
+    app: rabbitmq2
+spec:
+  ports:
+  - port: 5672
+    name: rabbitmq21
+    protocol: TCP
+    targetPort: 5672
+  - port: 15672
+    name: rabbitmq22
+    protocol: TCP
+    targetPort: 15672
+
+  clusterIP: None
+  selector:
+    app: rabbitmq2
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: rabbitmq3
+  namespace: myns1
+spec:
+  serviceName: rabbitmq3
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: rabbitmq3
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+            {
+                "name": "init-rabbitmq-first",
+                "image": "busybox",
+                "command": ["sh", "-c", "until nslookup rabbit1; do echo waiting for rabbit2; sleep 2; done;"]
+            }
+        ]'
+    spec:
+      containers:
+      - name: rabbitmq
+        imagePullPolicy: IfNotPresent
+        image: daocloud.io/daocloud/rabbitmq-ha-server:dce
+        volumeMounts:
+        - name: rabbitmq3
+          mountPath: "/var/lib/rabbitmq"
+        env:
+        - name : CLUSTERED
+          value: '''true'''
+        - name : CLUSTER_WITH
+          value: "rabbit1"
+        - name : HOSTNAME
+          value: "rabbit3"
+        - name : RABBITMQ_ERLANG_COOKIE
+          value: "passwordpassword"
+        - name : RABBITMQ_DEFAULT_USER
+          value: "admin"
+        - name : RABBITMQ_DEFAULT_PASS
+          value: "password"
+        - name : RABBITMQ_LOGS
+          value: "/var/log/rabbitmq/rabbit.log"
+        - name : ADDRESS
+          value: "rabbit1:5672,rabbit1:15672"
+      volumes:
+      - name: rabbitmq3
+        persistentVolumeClaim:
+          claimName: nfs2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbit3
+  namespace: myns1
+  labels:
+    app: rabbitmq3
+spec:
+  ports:
+  - port: 5672
+    name: rabbitmq31
+    protocol: TCP
+    targetPort: 5672
+  - port: 15672
+    name: rabbitmq32
+    protocol: TCP
+    targetPort: 15672
+
+  clusterIP: None
+  selector:
+    app: rabbitmq3
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: haproxy
+  namespace: myns1
+  labels:
+    app: haproxy
+  annotations:
+    pod.beta.kubernetes.io/init-containers: '[
+        {
+            "name": "init-rabbitmq",
+            "image": "busybox",
+            "command": ["sh", "-c", "until nslookup rabbit3; do echo waiting for rabbit3; sleep 2; done;"]
+        }
+    ]'
+spec:
+  containers:
+  - name: haproxy
+    image: daocloud.io/daocloud/haproxy:1.4-rabbitmq
+    env: 
+    - name : RABBITMQ_DEFAULT_PASS
+      value: "password"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: haproxy
+  namespace: myns1
+  labels:
+    app: haproxy
+spec:
+  ports:
+  - port: 5672
+    name: rabbitmq21
+    protocol: TCP
+    targetPort: 5672
+    nodePort: 30002
+  - port: 15672
+    name: rabbitmq22
+    protocol: TCP
+    targetPort: 15672
+    nodePort: 30001
+
+  #clusterIP: None
+  type: NodePort
+  selector:
+    app: rabbitmq2
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nfs
+  namespace: myns1
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nfs1
+  namespace: myns1
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nfs2
+  namespace: myns1
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi

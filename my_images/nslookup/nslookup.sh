@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 just_nslookup() {
 	until nslookup $1; do echo waiting for $1; sleep 2; done;
 }

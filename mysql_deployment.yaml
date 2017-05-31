@@ -69,8 +69,8 @@ spec:
  # - port: 3306
  #   nodePort: 3306
  #   targetPort: 3306
- # clusterIP: None
-  clusterIP: 10.102.47.91
+# clusterIP: None
+#  clusterIP: 10.32.11.21
   ports:
   - port: 3306
     name: mysql-port
