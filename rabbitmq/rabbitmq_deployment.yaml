@@ -1,3 +1,8 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: myns2
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,11 +15,7 @@ data:
   rabbitmq-default-pass: "password"
   rabbitmq-address: "rabbit1:5672,rabbit1:15672"
 ---
-kind: Namespace
-apiVersion: v1
-metadata:
-  name: myns2
----
+
 kind: StatefulSet
 apiVersion: apps/v1beta1
 metadata:
@@ -28,21 +29,18 @@ spec:
       labels:
         app: rabbitmq1
     spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: "app"
-                    operator: In
-                    values:
-                    - rabbitmq
-              topologyKey: "kubernetes.io/hostname"
-
-      volumes:
-      - name: rabbitmq1
-        persistentVolumeClaim:
-          claimName: pvcs00
+     # affinity:
+     #   podAntiAffinity:
+     #     requiredDuringSchedulingIgnoredDuringExecution:
+     #       - labelSelector:
+     #           matchExpressions:
+     #             - key: "app"
+     #               operator: In
+     #               values:
+     #               - rabbitmq2
+     #         topologyKey: "kubernetes.io/hostname"
+      nodeSelector:   
+        haspx: yep
       containers:
       - name: rabbitmq
         imagePullPolicy: IfNotPresent
@@ -72,6 +70,10 @@ spec:
               key: rabbitmq-default-pass
         - name : RABBITMQ_LOGS
           value: "/var/log/rabbitmq/rabbit.log"
+      volumes:
+      - name: rabbitmq1
+        persistentVolumeClaim:
+          claimName: pvcs00
 ---
 apiVersion: v1
 kind: Service
@@ -116,17 +118,18 @@ spec:
             }
         ]'
     spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: "app"
-                    operator: In
-                    values:
-                    - rabbitmq
-              topologyKey: "kubernetes.io/hostname"
-
+     # affinity:
+     #   podAntiAffinity:
+     #     requiredDuringSchedulingIgnoredDuringExecution:
+     #       - labelSelector:
+     #           matchExpressions:
+     #             - key: "app"
+     #               operator: In
+     #               values:
+     #               - rabbitmq3
+     #         topologyKey: "kubernetes.io/hostname"
+      nodeSelector:   
+        haspx: yep
       containers:
       - name: rabbitmq
         imagePullPolicy: IfNotPresent
@@ -214,16 +217,18 @@ spec:
             }
         ]'
     spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: "app"
-                    operator: In
-                    values:
-                    - rabbitmq
-              topologyKey: "kubernetes.io/hostname"
+     # affinity:
+     #   podAntiAffinity:
+     #     requiredDuringSchedulingIgnoredDuringExecution:
+     #       - labelSelector:
+     #           matchExpressions:
+     #             - key: "app"
+     #               operator: In
+     #               values:
+     #               - rabbitmq1
+     #         topologyKey: "kubernetes.io/hostname"
+      nodeSelector:   
+        haspx: yep
       containers:
       - name: rabbitmq
         imagePullPolicy: IfNotPresent
@@ -353,7 +358,7 @@ parameters:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: pvcsc00
+  name: pvcs00
   namespace: myns2
   annotations:
     volume.beta.kubernetes.io/storage-class: portworx
@@ -367,7 +372,7 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: pvcsc001
+  name: pvcs001
   namespace: myns2
   annotations:
     volume.beta.kubernetes.io/storage-class: portworx
@@ -381,7 +386,7 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: pvcsc002
+  name: pvcs002
   namespace: myns2
   annotations:
     volume.beta.kubernetes.io/storage-class: portworx
