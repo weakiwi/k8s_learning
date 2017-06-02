@@ -65,10 +65,17 @@ spec:
       labels:
         app: redis-master
     spec:
+      volumes:
+      - name: master
+        persistentVolumeClaim:
+          claimName: pvcs001
       containers:
       - name: redis
         imagePullPolicy: IfNotPresent
         image: daocloud.io/library/redis:3.2.8
+        volumeMounts:
+        - name: master
+          mountPath: "/data"
         command: ["bash", "-c"]
         args: ["/usr/local/bin/docker-entrypoint.sh --appendonly yes --masterauth ppaasssswwoorrdd --requirepass ppaasssswwoorrdd"]
 ---
@@ -112,30 +119,36 @@ spec:
         ]'
 
     spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: "app"
-                    operator: In
-                    values:
-                    - redis-master
-              topologyKey: "kubernetes.io/hostname"
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: "app"
-                    operator: In
-                    values:
-                    - redis-slave1
-              topologyKey: "kubernetes.io/hostname"
-
+    #  affinity:
+    #    podAntiAffinity:
+    #      requiredDuringSchedulingIgnoredDuringExecution:
+    #        - labelSelector:
+    #            matchExpressions:
+    #              - key: "app"
+    #                operator: In
+    #                values:
+    #                - redis-master
+    #          topologyKey: "kubernetes.io/hostname"
+    #    podAntiAffinity:
+    #      requiredDuringSchedulingIgnoredDuringExecution:
+    #        - labelSelector:
+    #            matchExpressions:
+    #              - key: "app"
+    #                operator: In
+    #                values:
+    #                - redis-slave1
+    #          topologyKey: "kubernetes.io/hostname"
+      volumes:
+      - name: slave0
+        persistentVolumeClaim:
+          claimName: pvcs002
       containers:
       - name: redis
         imagePullPolicy: IfNotPresent
         image: daocloud.io/library/redis:3.2.8
+        volumeMounts:
+        - name: slave0
+          mountPath: "/data"
         command: ["bash", "-c"]
         args: ["/usr/local/bin/docker-entrypoint.sh redis-server --slaveof master 6379 --appendonly yes --masterauth ppaasssswwoorrdd --requirepass ppaasssswwoorrdd"]
         env:
@@ -182,17 +195,16 @@ spec:
         ]'
 
     spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: "app"
-                    operator: In
-                    values:
-                    - redis-sentinel
-              topologyKey: "kubernetes.io/hostname"
-
+    #  affinity:
+    #    podAntiAffinity:
+    #      requiredDuringSchedulingIgnoredDuringExecution:
+    #        - labelSelector:
+    #            matchExpressions:
+    #              - key: "app"
+    #                operator: In
+    #                values:
+    #                - redis-sentinel
+    #          topologyKey: "kubernetes.io/hostname"
       containers:
       - name: redis
         imagePullPolicy: IfNotPresent
@@ -223,30 +235,36 @@ spec:
         ]'
 
     spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: "app"
-                    operator: In
-                    values:
-                    - redis-slave0
-              topologyKey: "kubernetes.io/hostname"
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: "app"
-                    operator: In
-                    values:
-                    - redis-master
-              topologyKey: "kubernetes.io/hostname"
-
+    #  affinity:
+    #    podAntiAffinity:
+    #      requiredDuringSchedulingIgnoredDuringExecution:
+    #        - labelSelector:
+    #            matchExpressions:
+    #              - key: "app"
+    #                operator: In
+    #                values:
+    #                - redis-slave0
+    #          topologyKey: "kubernetes.io/hostname"
+    #    podAntiAffinity:
+    #      requiredDuringSchedulingIgnoredDuringExecution:
+    #        - labelSelector:
+    #            matchExpressions:
+    #              - key: "app"
+    #                operator: In
+    #                values:
+    #                - redis-master
+    #          topologyKey: "kubernetes.io/hostname"
+      volumes:
+      - name: rabbitmq1
+        persistentVolumeClaim:
+          claimName: pvcs004
       containers:
       - name: redis
         imagePullPolicy: IfNotPresent
         image: daocloud.io/library/redis:3.2.8
+        volumeMounts:
+        - name: rabbitmq1
+          mountPath: "/data"
         command: ["bash", "-c"]
         args: ["/usr/local/bin/docker-entrypoint.sh redis-server --slaveof master 6379 --appendonly yes --masterauth ppaasssswwoorrdd --requirepass ppaasssswwoorrdd"]
         env:
@@ -270,4 +288,87 @@ spec:
   clusterIP: None
   selector:
     app: redis-slave1
-
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvcs001
+  namespace: myns
+  annotations:
+    volume.beta.kubernetes.io/storage-class: portworx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvcs002
+  namespace: myns
+  annotations:
+    volume.beta.kubernetes.io/storage-class: portworx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvcs003
+  namespace: myns
+  annotations:
+    volume.beta.kubernetes.io/storage-class: portworx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvcs004
+  namespace: myns
+  annotations:
+    volume.beta.kubernetes.io/storage-class: portworx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvcs005
+  namespace: myns
+  annotations:
+    volume.beta.kubernetes.io/storage-class: portworx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvcs006
+  namespace: myns
+  annotations:
+    volume.beta.kubernetes.io/storage-class: portworx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
