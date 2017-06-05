@@ -36,18 +36,19 @@ spec:
     metadata:
       labels:
         app: {{ name }} 
-      {% if label  %}
+      {% if label %}
       annotations:
       {% for i in label %}
 	{{ i[0] }}: "{{ i[1] }}"
       {% endfor %}
       {% endif %}
+    spec:
       containers:
       - name: {{ name }}
         imagePullPolicy: IfNotPresent
         image: {{ image }}
 	{% if command %}
-	command: "{{ command }}"
+	command: ["{{ command }}"]
 	{% endif %}
         {% if volumes  %}
         {% for i in volumes[1] %}
@@ -56,19 +57,19 @@ spec:
 	  mountPath: "{{ i }}"
 	{% endfor %}
 	{% endif %}
-        {% if environment  %}
+        {% if environment %}
 	env:
 	{% for i in environment %}
-	- name: {{ i[0] }}
-	  value: {{ i[1] }}
+	- name: {{ i }}
+	  value: {{ environment[i] }}
 	{% endfor %}
 	{% endif %}
         {% if volumes  %}
-	env:
-	- name: {{ name }}
-	  persistentVolumeClaim:
-	    claimName: {{ volumes[0] }}
-	{% endif %}
+      volumes:
+      - name: {{ name }}
+        persistentVolumeClaim:
+          claimName: {{ volumes[0] }}
+      {% endif %}
 ---
 </pre>
 {% endmacro %}

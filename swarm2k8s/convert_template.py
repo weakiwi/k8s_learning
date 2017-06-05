@@ -2,6 +2,8 @@ from flask import Flask,render_template
 import yaml
 
 app = Flask(__name__)
+app.jinja_env.trim_blocks = True  
+app.jinja_env.lstrip_blocks = True  
  
 @app.route('/hello')
 @app.route('/hello/<name>')
@@ -12,9 +14,18 @@ def hello(name=None):
 	services = dataMap['services']
 	ports=[value["ports"] for value in dataMap["services"].values()]
 	images=[value["image"] for value in dataMap["services"].values()]
-	commands=[value["image"] for value in dataMap["services"].values()]
-	environment=[map(lambda x:x.split("="), value["environment"]) for value in dataMap["services"].values() if "environment" in value]  if "services" in dataMap else []
-	labels=[map(lambda x:x.split("=",1), value["labels"]) for value in dataMap["services"].values() if "labels" in value]  if "services" in dataMap else []
+#	if "commands" in services:
+#		commands=[value["command"] for value in dataMap["services"].values()]
+#	else:
+#		commands=[]
+	commands=[]
+	for i in services:
+		if "command" in i:
+			commands.append(i["command"])
+		else:
+			commands.append(None)
+	environment=[value["environment"] for value in dataMap["services"].values() if "environment" in value]  if "services" in dataMap else []
+	labels=[map(lambda x:x.split('=', 1) ,map(lambda x:x.replace('"',''), value["labels"])) for value in dataMap["services"].values() if "labels" in value]  if "services" in dataMap else []
 	mountpaths=[value["volumes"] for value in dataMap["services"].values() if "volumes" in value]  if "services" in dataMap else []
 	volumes = []
 	storages = []
