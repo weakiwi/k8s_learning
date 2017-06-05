@@ -1,13 +1,13 @@
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: myns
+  name: {{ usernamespace }}
 ---
 kind: StatefulSet
 apiVersion: apps/v1beta1
 metadata:
   name: haproxy
-  namespace: myns
+  namespace: {{ usernamespace }}
 spec:
   serviceName: haproxy
   replicas: 1
@@ -16,6 +16,8 @@ spec:
       labels:
         app: haproxy
       annotations:
+        io.daocloud.service.role: "proxy"
+        io.daocloud.service.console: "true"
         pod.beta.kubernetes.io/init-containers: '[
             {
                 "name": "init-rabbitmq-first",
@@ -31,13 +33,15 @@ spec:
         image: daocloud.io/daocloud/haproxy-redis
         env:
         - name : REDIS_AUTH_PASSWORD
-          value: "ppaasssswwoorrdd"
+          value: {{ PASSWORD }}
+        - name : STARTORDER
+          value: "7"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: haproxy
-  namespace: myns
+  namespace: {{ usernamespace }}
   labels:
     app: haproxy
 spec:
@@ -56,7 +60,7 @@ kind: StatefulSet
 apiVersion: apps/v1beta1
 metadata:
   name: redis-master
-  namespace: myns
+  namespace: {{ usernamespace }}
 spec:
   serviceName: redis-master
   replicas: 1
@@ -64,6 +68,10 @@ spec:
     metadata:
       labels:
         app: redis-master
+      annotations:
+        io.daocloud.dce.service.role: "master"
+        io.daocloud.dce.compose.endpoint-spec.mode: "dnsrr"
+        io.daocloud.dce.compose.placement.constraints: "[\"node.labels.servicepool1 == servicepool1\"]"
     spec:
       volumes:
       - name: master
@@ -73,6 +81,9 @@ spec:
       - name: redis
         imagePullPolicy: IfNotPresent
         image: daocloud.io/library/redis:3.2.8
+        env:
+        - name : STARTORDER
+          value: "0"
         volumeMounts:
         - name: master
           mountPath: "/data"
@@ -83,7 +94,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: master
-  namespace: myns
+  namespace: {{ usernamespace }}
   labels:
     app: redis-master
 spec:
@@ -101,7 +112,7 @@ kind: StatefulSet
 apiVersion: apps/v1beta1
 metadata:
   name: redis-slave0
-  namespace: myns
+  namespace: {{ usernamespace }}
 spec:
   serviceName: redis-slave0
   replicas: 1
@@ -110,6 +121,9 @@ spec:
       labels:
         app: redis-slave0
       annotations:
+        io.daocloud.dce.service.role: "slave"
+        io.daocloud.dce.compose.endpoint-spec.mode: "dnsrr"
+        io.daocloud.dce.compose.placement.constraints: "[\"node.labels.servicepool2 == servicepool2\"]"
         pod.beta.kubernetes.io/init-containers: '[
             {
                 "name": "init-rabbitmq-first",
@@ -119,25 +133,25 @@ spec:
         ]'
 
     spec:
-    #  affinity:
-    #    podAntiAffinity:
-    #      requiredDuringSchedulingIgnoredDuringExecution:
-    #        - labelSelector:
-    #            matchExpressions:
-    #              - key: "app"
-    #                operator: In
-    #                values:
-    #                - redis-master
-    #          topologyKey: "kubernetes.io/hostname"
-    #    podAntiAffinity:
-    #      requiredDuringSchedulingIgnoredDuringExecution:
-    #        - labelSelector:
-    #            matchExpressions:
-    #              - key: "app"
-    #                operator: In
-    #                values:
-    #                - redis-slave1
-    #          topologyKey: "kubernetes.io/hostname"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - redis-master
+              topologyKey: "kubernetes.io/hostname"
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - redis-slave1
+              topologyKey: "kubernetes.io/hostname"
       volumes:
       - name: slave0
         persistentVolumeClaim:
@@ -153,13 +167,13 @@ spec:
         args: ["/usr/local/bin/docker-entrypoint.sh redis-server --slaveof master 6379 --appendonly yes --masterauth ppaasssswwoorrdd --requirepass ppaasssswwoorrdd"]
         env:
         - name : REDIS_AUTH_PASSWORD
-          value: "ppaasssswwoorrdd"
+          value: {{ password }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: slave
-  namespace: myns
+  namespace: {{ usernamespace }}
   labels:
     app: redis-slave
 spec:
@@ -177,7 +191,7 @@ kind: StatefulSet
 apiVersion: apps/v1beta1
 metadata:
   name: redis-sentinel
-  namespace: myns
+  namespace: {{ usernamespace }}
 spec:
   serviceName: redis-sentinel
   replicas: 3
@@ -186,6 +200,7 @@ spec:
       labels:
         app: redis-sentinel
       annotations:
+        io.daocloud.dce.compose.placement.constraints: "[\"node.labels.servicepool3 == servicepool3\"]"
         pod.beta.kubernetes.io/init-containers: '[
             {
                 "name": "init-rabbitmq-first",
@@ -195,29 +210,29 @@ spec:
         ]'
 
     spec:
-    #  affinity:
-    #    podAntiAffinity:
-    #      requiredDuringSchedulingIgnoredDuringExecution:
-    #        - labelSelector:
-    #            matchExpressions:
-    #              - key: "app"
-    #                operator: In
-    #                values:
-    #                - redis-sentinel
-    #          topologyKey: "kubernetes.io/hostname"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - redis-sentinel
+              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: redis
         imagePullPolicy: IfNotPresent
         image: daocloud.io/daocloud/redis-sentinel
         env:
         - name : REDIS_AUTH_PASSWORD
-          value: "ppaasssswwoorrdd"
+          value: {{ password }}
 ---
 kind: StatefulSet
 apiVersion: apps/v1beta1
 metadata:
   name: redis-slave1
-  namespace: myns
+  namespace: {{ usernamespace }}
 spec:
   serviceName: redis-slave1
   replicas: 1
@@ -235,25 +250,25 @@ spec:
         ]'
 
     spec:
-    #  affinity:
-    #    podAntiAffinity:
-    #      requiredDuringSchedulingIgnoredDuringExecution:
-    #        - labelSelector:
-    #            matchExpressions:
-    #              - key: "app"
-    #                operator: In
-    #                values:
-    #                - redis-slave0
-    #          topologyKey: "kubernetes.io/hostname"
-    #    podAntiAffinity:
-    #      requiredDuringSchedulingIgnoredDuringExecution:
-    #        - labelSelector:
-    #            matchExpressions:
-    #              - key: "app"
-    #                operator: In
-    #                values:
-    #                - redis-master
-    #          topologyKey: "kubernetes.io/hostname"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - redis-slave0
+              topologyKey: "kubernetes.io/hostname"
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - redis-master
+              topologyKey: "kubernetes.io/hostname"
       volumes:
       - name: rabbitmq1
         persistentVolumeClaim:
@@ -269,13 +284,13 @@ spec:
         args: ["/usr/local/bin/docker-entrypoint.sh redis-server --slaveof master 6379 --appendonly yes --masterauth ppaasssswwoorrdd --requirepass ppaasssswwoorrdd"]
         env:
         - name : REDIS_AUTH_PASSWORD
-          value: "ppaasssswwoorrdd"
+          value: {{ password }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: slave1
-  namespace: myns
+  namespace: {{ usernamespace }}
   labels:
     app: redis-slave1
 spec:
@@ -293,7 +308,7 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: pvcs001
-  namespace: myns
+  namespace: {{ usernamespace }}
   annotations:
     volume.beta.kubernetes.io/storage-class: portworx
 spec:
@@ -307,7 +322,7 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: pvcs002
-  namespace: myns
+  namespace: {{ usernamespace }}
   annotations:
     volume.beta.kubernetes.io/storage-class: portworx
 spec:
@@ -321,7 +336,7 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: pvcs003
-  namespace: myns
+  namespace: {{ usernamespace }}
   annotations:
     volume.beta.kubernetes.io/storage-class: portworx
 spec:
@@ -335,7 +350,7 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: pvcs004
-  namespace: myns
+  namespace: {{ usernamespace }}
   annotations:
     volume.beta.kubernetes.io/storage-class: portworx
 spec:
@@ -349,7 +364,7 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: pvcs005
-  namespace: myns
+  namespace: {{ usernamespace }}
   annotations:
     volume.beta.kubernetes.io/storage-class: portworx
 spec:
@@ -363,7 +378,7 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: pvcs006
-  namespace: myns
+  namespace: {{ usernamespace }}
   annotations:
     volume.beta.kubernetes.io/storage-class: portworx
 spec:

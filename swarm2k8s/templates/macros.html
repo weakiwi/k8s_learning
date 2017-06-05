@@ -1,0 +1,116 @@
+{% macro service_layout(name, namespace, ports) %}
+<pre>
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{name}}
+  namespace: {{namespace}}
+  labels:
+    app: {{name}}
+spec:
+  ports:
+ {% for i in ports %}
+  - port: {{ ports }}
+    name: random
+    protocol: TCP
+    targetPort: {{ ports }}
+  {% endfor %}
+
+  clusterIP: None
+  selector:
+    app: {{name}}
+---
+</pre>
+{% endmacro %}
+{% macro statefulset_layout(name, namespace, image, command, environment, label, volumes) %}
+<pre>
+kind: StatefulSet
+apiVersion: apps/v1beta1
+metadata:
+  name: {{ name }}
+  namespace: {{ namespace }}
+spec:
+  serviceName: {{ name }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ name }} 
+      {% if label  %}
+      annotations:
+      {% for i in label %}
+	{{ i[0] }}: "{{ i[1] }}"
+      {% endfor %}
+      {% endif %}
+      containers:
+      - name: {{ name }}
+        imagePullPolicy: IfNotPresent
+        image: {{ image }}
+	{% if command %}
+	command: "{{ command }}"
+	{% endif %}
+        {% if volumes  %}
+        {% for i in volumes[1] %}
+	volumeMounts:
+	- name: {{ name }}
+	  mountPath: "{{ i }}"
+	{% endfor %}
+	{% endif %}
+        {% if environment  %}
+	env:
+	{% for i in environment %}
+	- name: {{ i[0] }}
+	  value: {{ i[1] }}
+	{% endfor %}
+	{% endif %}
+        {% if volumes  %}
+	env:
+	- name: {{ name }}
+	  persistentVolumeClaim:
+	    claimName: {{ volumes[0] }}
+	{% endif %}
+---
+</pre>
+{% endmacro %}
+{% macro pvc_layout(pvc, namespace, storage) %}
+<pre>
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ pvc }}
+  namespace: {{ namespace }}
+  annotations:
+    volume.beta.kubernetes.io/storage-class: portworx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ storage }}
+---
+</pre>
+{% endmacro %}
+{% macro volumes_layout(name, pvc) %}
+<pre>
+      volumes:
+      - name: {{ name  }}
+        persistentVolumeClaim:
+          claimName: {{ pvc }}
+</pre>
+{% endmacro %}
+{% macro volumemounts_layout(name, path) %}
+<pre>
+        volumeMounts:
+        - name: {{ name }}
+          mountPath: "{{ path }}"
+</pre>
+{% endmacro %}
+{% macro namespace_layout(namespace) %}
+<pre>
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: {{ namespace }}
+---
+</pre>
+{% endmacro %}

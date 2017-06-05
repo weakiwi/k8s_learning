@@ -1,24 +1,13 @@
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: myns1
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: mongo-config
-  namespace: myns1
-data:
-  mongo-user: "admin"
-  mongo-pass: "admin"
-  mongo-database: "dbtest"
-  mongo-app : "apptest"
+  name: {{ usernamespace }}
 ---
 kind: StatefulSet
 apiVersion: apps/v1beta1
 metadata:
   name: mongos0
-  namespace: myns1
+  namespace: {{ usernamespace }}
 spec:
   serviceName: mongos0
   replicas: 1
@@ -26,6 +15,9 @@ spec:
     metadata:
       labels:
         app: mongos0
+      annotations:
+        io.daocloud.service.role: "maste"
+        io.daocloud.compose.placement.constraints: "[\"node.labels.servicepool2 == servicepool2\"]"
     spec:
       affinity:
         podAntiAffinity:
@@ -35,56 +27,56 @@ spec:
                   - key: "app"
                     operator: In
                     values:
-                    - mongo
+                    - mongos1
               topologyKey: "kubernetes.io/hostname"
 
       containers:
       - name: mongo-ha
         imagePullPolicy: IfNotPresent
         image: daocloud.io/daocloud/mongo-ha
-        args: "--replSet rs0 --auth --keyFile /etc/mongo_key"
+        volumeMounts:
+        - name: mongos0
+          mountPath: "/data/db"
+        args: ["--replSet rs0 --auth --keyFile /etc/mongo_key"]
         env:
         - name : replSet
           value: "rs0"
         - name : MONGODB_USER
-          valueFrom:
-            configMapKeyRef:
-              name: mongo-config
-              key: mongo-user
+          value: {{ username }}
         - name : MONGODB_PASS
-          valueFrom:
-            configMapKeyRef:
-              name: mongo-config
-              key: mongo-pass
+          value: {{ password }}
         - name : MONGODB_DATABASE
-          valueFrom:
-            configMapKeyRef:
-              name: mongo-config
-              key: mongo-database
+          value: {{ database }}
+        - name : STARTORDER
+          value: "0"
+      volumes:
+      - name: mongos0
+        persistentVolumeClaim:
+          claimName: pvcs002
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: mongos0
-  namespace: myns1
+  namespace: {{ usernamespace }}
   labels:
     app: mongos0
 spec:
   ports:
   - port: 27017
-    name: rabbitmq11
+    name: mongos0
     protocol: TCP
     targetPort: 27017
 
   clusterIP: None
   selector:
-    app: mongos
+    app: mongos0
 ---
 kind: StatefulSet
 apiVersion: apps/v1beta1
 metadata:
   name: mongos1
-  namespace: myns1
+  namespace: {{ usernamespace }}
 spec:
   serviceName: mongos1
   replicas: 1
@@ -92,6 +84,9 @@ spec:
     metadata:
       labels:
         app: mongos1
+      annotations:
+        io.daocloud.service.role: "master"
+        io.daocloud.compose.placement.constraints: "[\"node.labels.servicepool3 == servicepool3\"]"
     spec:
       affinity:
         podAntiAffinity:
@@ -101,56 +96,56 @@ spec:
                   - key: "app"
                     operator: In
                     values:
-                    - mongo
+                    - mongop0
               topologyKey: "kubernetes.io/hostname"
 
       containers:
       - name: mongo-ha
         imagePullPolicy: IfNotPresent
         image: daocloud.io/daocloud/mongo-ha
-        args: "--replSet rs0 --auth --keyFile /etc/mongo_key"
+        volumeMounts:
+        - name: mongos1
+          mountPath: "/data/db"
+        args: ["--replSet rs0 --auth --keyFile /etc/mongo_key"]
         env:
         - name : replSet
           value: "rs0"
         - name : MONGODB_USER
-          valueFrom:
-            configMapKeyRef:
-              name: mongo-config
-              key: mongo-user
+          value: {{ username }}
         - name : MONGODB_PASS
-          valueFrom:
-            configMapKeyRef:
-              name: mongo-config
-              key: mongo-pass
+          value: {{ password }}
         - name : MONGODB_DATABASE
-          valueFrom:
-            configMapKeyRef:
-              name: mongo-config
-              key: mongo-database
+          value: {{ database }}
+        - name : STARTORDER
+          value: "1"
+      volumes:
+      - name: mongos1
+        persistentVolumeClaim:
+          claimName: pvcs003
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: mongos1
-  namespace: myns1
+  namespace: {{ usernamespace }}
   labels:
     app: mongos1
 spec:
   ports:
   - port: 27017
-    name: rabbitmq11
+    name: mongos0
     protocol: TCP
     targetPort: 27017
 
   clusterIP: None
   selector:
-    app: mongos
+    app: mongos1
 ---
 kind: StatefulSet
 apiVersion: apps/v1beta1
 metadata:
   name: express
-  namespace: myns1
+  namespace: {{ usernamespace }}
 spec:
   serviceName: express
   replicas: 1
@@ -158,6 +153,8 @@ spec:
     metadata:
       labels:
         app: express
+      annotations:
+        io.daocloud.service.console: "true"
     spec:
       affinity:
         podAntiAffinity:
@@ -180,62 +177,153 @@ spec:
         - name : ME_CONFIG_MONGODB_ENABLE_ADMIN
           value: '''true'''
         - name : ME_CONFIG_MONGODB_ADMINUSERNAME
-          valueFrom:
-            configMapKeyRef:
-              name: mongo-config
-              key: mongo-user
+          value: {{ username }}
         - name : ME_CONFIG_MONGODB_ADMINPASSWORD
-          valueFrom:
-            configMapKeyRef:
-              name: mongo-config
-              key: mongo-pass
+          value: {{ password }}
         - name : ME_CONFIG_MONGODB_AUTH_USERNAME
-          valueFrom:
-            configMapKeyRef:
-              name: mongo-config
-              key: mongo-user
+          value: {{ username }}
         - name : ME_CONFIG_MONGODB_AUTH_PASSWORD
-          valueFrom:
-            configMapKeyRef:
-              name: mongo-config
-              key: mongo-pass
+          value: {{ password }}
         - name : ME_CONFIG_BASICAUTH_USERNAME
-          valueFrom:
-            configMapKeyRef:
-              name: mongo-config
-              key: mongo-user
+          value: {{ username }}
         - name : ME_CONFIG_BASICAUTH_PASSWORD
-          valueFrom:
-            configMapKeyRef:
-              name: mongo-config
-              key: mongo-pass
+          value: {{ password }}
         - name : USERNAME
-          valueFrom:
-            configMapKeyRef:
-              name: mongo-config
-              key: mongo-user
+          value: {{ username }}
         - name : PASSWORD
-          valueFrom:
-            configMapKeyRef:
-              name: mongo-config
-              key: mongo-pass
-        - name : 
+          value: {{ password }}
+        - name : STARTORDER
+          value: "3"
+        - name : ADDRESS
           value: "mongop0:27017,mongos1:27017,mongos0:27017"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: rabbit2
-  namespace: myns1
+  name: express
+  namespace: {{ usernamespace }}
   labels:
     app: express
 spec:
   ports:
   - port: 8081
-    name: rabbitmq21
+    name: express
     protocol: TCP
     targetPort: 8081
+    nodePort: 30002
+
+  type: NodePort
+  selector:
+    app: express
+---
+kind: StatefulSet
+apiVersion: apps/v1beta1
+metadata:
+  name: mongop0
+  namespace: {{ usernamespace }}
+spec:
+  serviceName: mongop0
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mongop0
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - mongos0
+              topologyKey: "kubernetes.io/hostname"
+
+      containers:
+      - name: mongop0
+        imagePullPolicy: IfNotPresent
+        image: daocloud.io/daocloud/mongo-ha
+        args: ["--replSet rs0 --auth --keyFile /etc/mongo_key"]
+        volumeMounts:
+        - name: mongop0
+          mountPath: "/etc/mysql"
+        env:
+        - name : replSet
+          value: "rs0"
+        - name : MONGODB_USER
+          value: {{ username }}
+        - name : MONGODB_PASS
+          value: {{ password }}
+        - name : MONGODB_DATABASE
+          value: {{ database }}
+        - name : STARTORDER
+          value: "2"
+        - name: ADDRESS
+          value: "mongos1:27017,mongos0:27017"
+        - name: PRIMARY
+          value: "1"
+      volumes:
+      - name: mongop0
+        persistentVolumeClaim:
+          claimName: pvcs001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongop0
+  namespace: {{ usernamespace }}
+  labels:
+    app: mongop0
+spec:
+  ports:
+  - port: 27017
+    name: mongop0
+    protocol: TCP
+    targetPort: 27017
 
   clusterIP: None
   selector:
-    app: express
+    app: mongop0
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvcs001
+  namespace: {{ usernamespace }}
+  annotations:
+    volume.beta.kubernetes.io/storage-class: portworx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvcs002
+  namespace: {{ usernamespace }}
+  annotations:
+    volume.beta.kubernetes.io/storage-class: portworx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvcs003
+  namespace: {{ usernamespace }}
+  annotations:
+    volume.beta.kubernetes.io/storage-class: portworx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi

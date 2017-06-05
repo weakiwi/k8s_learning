@@ -1,26 +1,13 @@
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: myns2
+  name: {{ usernamespace }}
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: rabbitmq-config
-  namespace: myns2
-data:
-  rabbitmq-hostname: "rabbit1"
-  rabbitmq-erlang-cookie: "ppaasssswwoorrdd"
-  rabbitmq-default-user: "admin"
-  rabbitmq-default-pass: "password"
-  rabbitmq-address: "rabbit1:5672,rabbit1:15672"
----
-
 kind: StatefulSet
 apiVersion: apps/v1beta1
 metadata:
   name: rabbitmq1
-  namespace: myns2
+  namespace: {{ usernamespace }}
 spec:
   serviceName: rabbitmq1
   replicas: 1
@@ -28,17 +15,21 @@ spec:
     metadata:
       labels:
         app: rabbitmq1
+      annotations:
+        io.daocloud.service.role: "master"
+        io.daocloud.compose.endpoint-spec.mode: "dnsrr"
+        io.daocloud.compose.placement.constraints: "[\"node.labels.servicepool1 == servicepool1\"]"
     spec:
-     # affinity:
-     #   podAntiAffinity:
-     #     requiredDuringSchedulingIgnoredDuringExecution:
-     #       - labelSelector:
-     #           matchExpressions:
-     #             - key: "app"
-     #               operator: In
-     #               values:
-     #               - rabbitmq2
-     #         topologyKey: "kubernetes.io/hostname"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - rabbitmq2
+              topologyKey: "kubernetes.io/hostname"
       nodeSelector:   
         haspx: yep
       containers:
@@ -51,23 +42,16 @@ spec:
         env:
         - name : CLUSTERED
           value: '''true'''
+        - name : STARTORDER
+          value: "0"
         - name : HOSTNAME
           value: "rabbit1"
         - name : RABBITMQ_ERLANG_COOKIE
-          valueFrom:
-            configMapKeyRef:
-              name: rabbitmq-config
-              key: rabbitmq-erlang-cookie
+          value: {{ password }}{{ password }}
         - name : RABBITMQ_DEFAULT_USER
-          valueFrom:
-            configMapKeyRef:
-              name: rabbitmq-config
-              key: rabbitmq-default-user
+          value: "admin"
         - name : RABBITMQ_DEFAULT_PASS
-          valueFrom:
-            configMapKeyRef:
-              name: rabbitmq-config
-              key: rabbitmq-default-pass
+          value: {{ password }}
         - name : RABBITMQ_LOGS
           value: "/var/log/rabbitmq/rabbit.log"
       volumes:
@@ -79,7 +63,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: rabbit1
-  namespace: myns2
+  namespace: {{ usernamespace }}
   labels:
     app: rabbitmq1
 spec:
@@ -101,7 +85,7 @@ apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   name: rabbitmq2
-  namespace: myns2
+  namespace: {{ usernamespace }}
 spec:
   serviceName: rabbitmq2
   replicas: 1
@@ -110,6 +94,9 @@ spec:
       labels:
         app: rabbitmq2
       annotations:
+        io.daocloud.service.role: "slave"
+        io.daocloud.compose.endpoint-spec.mode: "dnsrr"
+        io.daocloud.compose.placement.constraints: "[\"node.labels.servicepool2 == servicepool2\"]"
         pod.beta.kubernetes.io/init-containers: '[
             {
                 "name": "init-rabbitmq-first",
@@ -118,16 +105,16 @@ spec:
             }
         ]'
     spec:
-     # affinity:
-     #   podAntiAffinity:
-     #     requiredDuringSchedulingIgnoredDuringExecution:
-     #       - labelSelector:
-     #           matchExpressions:
-     #             - key: "app"
-     #               operator: In
-     #               values:
-     #               - rabbitmq3
-     #         topologyKey: "kubernetes.io/hostname"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - rabbitmq3
+              topologyKey: "kubernetes.io/hostname"
       nodeSelector:   
         haspx: yep
       containers:
@@ -140,35 +127,22 @@ spec:
         env:
         - name : CLUSTERED
           value: '''true'''
+        - name : STARTORDER
+          value: "1"
         - name : HOSTNAME
           value: "rabbit2"
         - name : CLUSTER_WITH
-          valueFrom:
-            configMapKeyRef:
-                name: rabbitmq-config
-                key: rabbitmq-hostname
+          value: "rabbit1"
         - name : RABBITMQ_ERLANG_COOKIE
-          valueFrom:
-            configMapKeyRef:
-                name: rabbitmq-config
-                key: rabbitmq-erlang-cookie
+          value: {{ password }}{{ password }}
         - name : RABBITMQ_DEFAULT_USER
-          valueFrom:
-            configMapKeyRef:
-                name: rabbitmq-config
-                key: rabbitmq-default-user
+          value: "admin"
         - name : RABBITMQ_DEFAULT_PASS
-          valueFrom:
-            configMapKeyRef:
-                name: rabbitmq-config
-                key: rabbitmq-default-pass
+          value: {{ password }}
         - name : RABBITMQ_LOGS
           value: "/var/log/rabbitmq/rabbit.log"
         - name : ADDRESS
-          valueFrom:
-            configMapKeyRef:
-                name: rabbitmq-config
-                key: rabbitmq-address
+          value: "rabbit1:5672,rabbit1:15672"
       volumes:
       - name: rabbitmq2
         persistentVolumeClaim:
@@ -178,7 +152,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: rabbit2
-  namespace: myns2
+  namespace: {{ usernamespace }}
   labels:
     app: rabbitmq2
 spec:
@@ -200,7 +174,7 @@ apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   name: rabbitmq3
-  namespace: myns2
+  namespace: {{ usernamespace }}
 spec:
   serviceName: rabbitmq3
   replicas: 1
@@ -209,6 +183,9 @@ spec:
       labels:
         app: rabbitmq3
       annotations:
+        io.daocloud.service.role: "slave"
+        io.daocloud.compose.endpoint-spec.mode: "dnsrr"
+        io.daocloud.compose.placement.constraints: "[\"node.labels.servicepool3 == servicepool3\"]"
         pod.beta.kubernetes.io/init-containers: '[
             {
                 "name": "init-rabbitmq-first",
@@ -217,16 +194,16 @@ spec:
             }
         ]'
     spec:
-     # affinity:
-     #   podAntiAffinity:
-     #     requiredDuringSchedulingIgnoredDuringExecution:
-     #       - labelSelector:
-     #           matchExpressions:
-     #             - key: "app"
-     #               operator: In
-     #               values:
-     #               - rabbitmq1
-     #         topologyKey: "kubernetes.io/hostname"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - rabbitmq1
+              topologyKey: "kubernetes.io/hostname"
       nodeSelector:   
         haspx: yep
       containers:
@@ -239,35 +216,22 @@ spec:
         env:
         - name : CLUSTERED
           value: '''true'''
+        - name : STARTORDER
+          value: "2"
         - name : CLUSTER_WITH
-          valueFrom:
-            configMapKeyRef:
-                name: rabbitmq-config
-                key:  rabbitmq-hostname
+          value: "rabbit1"
         - name : HOSTNAME
           value: "rabbit3"
         - name : RABBITMQ_ERLANG_COOKIE
-          valueFrom:
-            configMapKeyRef:
-                name: rabbitmq-config
-                key:  rabbitmq-erlang-cookie
+          value: {{ password }}{{ password }}
         - name : RABBITMQ_DEFAULT_USER
-          valueFrom:
-            configMapKeyRef:
-                name: rabbitmq-config
-                key:  rabbitmq-default-user
+          value: "admin"
         - name : RABBITMQ_DEFAULT_PASS
-          valueFrom:
-            configMapKeyRef:
-                name: rabbitmq-config
-                key:  rabbitmq-default-pass
+          value: {{ password }}
         - name : RABBITMQ_LOGS
           value: "/var/log/rabbitmq/rabbit.log"
         - name : ADDRESS
-          valueFrom:
-            configMapKeyRef:
-                name: rabbitmq-config
-                key:  rabbitmq-address
+          value: "rabbit1:5672,rabbit1:15672"
       volumes:
       - name: rabbitmq3
         persistentVolumeClaim:
@@ -277,7 +241,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: rabbit3
-  namespace: myns2
+  namespace: {{ usernamespace }}
   labels:
     app: rabbitmq3
 spec:
@@ -299,10 +263,12 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: haproxy
-  namespace: myns2
+  namespace: {{ usernamespace }}
   labels:
     app: haproxy
   annotations:
+    io.daocloud.service.role: "proxy"
+    io.daocloud.service.console: "true"
     pod.beta.kubernetes.io/init-containers: '[
         {
             "name": "init-rabbitmq",
@@ -316,16 +282,15 @@ spec:
     image: daocloud.io/daocloud/haproxy:1.4-rabbitmq
     env: 
     - name : RABBITMQ_DEFAULT_PASS
-      valueFrom:
-        configMapKeyRef:
-            name: rabbitmq-config
-            key: rabbitmq-default-pass
+      value: {{ password }}
+    - name : STARTORDER
+      value: "3"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: haproxy
-  namespace: myns2
+  namespace: {{ usernamespace }}
   labels:
     app: haproxy
 spec:
@@ -350,7 +315,7 @@ kind: StorageClass
 apiVersion: storage.k8s.io/v1beta1
 metadata:
   name: portworx
-  namespace: myns2
+  namespace: {{ usernamespace }}
 provisioner: kubernetes.io/portworx-volume
 parameters:
   repl: "1"
@@ -359,7 +324,7 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: pvcs00
-  namespace: myns2
+  namespace: {{ usernamespace }}
   annotations:
     volume.beta.kubernetes.io/storage-class: portworx
 spec:
@@ -373,7 +338,7 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: pvcs001
-  namespace: myns2
+  namespace: {{ usernamespace }}
   annotations:
     volume.beta.kubernetes.io/storage-class: portworx
 spec:
@@ -387,7 +352,7 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: pvcs002
-  namespace: myns2
+  namespace: {{ usernamespace }}
   annotations:
     volume.beta.kubernetes.io/storage-class: portworx
 spec:

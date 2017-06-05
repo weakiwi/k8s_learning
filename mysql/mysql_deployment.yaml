@@ -101,6 +101,8 @@ spec:
         app: mysql-master
       annotations:
         pod.alpha.kubernetes.io/initialized: "true"
+        io.daocloud.service.role: "master"
+        io.daocloud.service.console: "true"
     spec:
       affinity:
         podAntiAffinity:
@@ -132,15 +134,9 @@ spec:
         - name : REPLICATION_MASTER
           value: '''true'''
         - name : MYSQL_USER
-          valueFrom:
-            configMapKeyRef:
-                name: mysql-config
-                key: mysql-root-user
+          value: {{ mysql_root_user }}
         - name : MYSQL_PASS
-          valueFrom:
-            configMapKeyRef:
-                name: mysql-config
-                key: mysql-user-pass
+          value: {{ mysql_user_pass }}
       volumes:
       - name: master
         persistentVolumeClaim:
@@ -160,6 +156,7 @@ spec:
         app: mysql-slave
       annotations:
         pod.alpha.kubernetes.io/initialized: "true"
+        io.daocloud.service.role: "slave"
     spec:
       affinity:
         podAntiAffinity:
@@ -202,15 +199,9 @@ spec:
         - name : REPLICATION_SLAVE
           value: '''true'''
         - name : MYSQL_USER
-          valueFrom:
-            configMapKeyRef:
-                name: mysql-config
-                key: mysql-root-user
+          value: {{ mysql_root_user }}
         - name : MYSQL_PASS
-          valueFrom:
-            configMapKeyRef:
-                name: mysql-config
-                key: mysql-user-pass
+          value: {{ mysql_user_pass }}
         - name : MYSQL_PORT_3306_TCP_ADDR
           valueFrom:
             configMapKeyRef:
@@ -219,15 +210,9 @@ spec:
         - name : MYSQL_PORT_3306_TCP_PORT
           value: "3306"
         - name : MYSQL_ENV_REPLICATION_USER
-          valueFrom:
-            configMapKeyRef:
-                name: mysql-config
-                key: mysql-root-user 
+          value: {{ mysql_root_user }}
         - name : MYSQL_ENV_REPLICATION_PASS
-          valueFrom:
-            configMapKeyRef:
-                name: mysql-config
-                key: mysql-user-pass
+          value: {{ mysql_user_pass }}
       volumes:
       - name: slave
         persistentVolumeClaim:

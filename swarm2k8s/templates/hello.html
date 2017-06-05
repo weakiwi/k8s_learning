@@ -1,0 +1,14 @@
+{% from "macros.html" import namespace_layout with context %}
+{% from "macros.html" import service_layout with context %}
+{% from "macros.html" import pvc_layout with context %}
+{% from "macros.html" import statefulset_layout with context %}
+{{ namespace_layout(namespace) }}
+{%  for i in statefulsets %}
+	{{ statefulset_layout(i[0], namespace, i[1], i[2],i[3], i[4], i[5])}}
+{% endfor %}
+{%  for i in services %}
+	{{ service_layout(i[0], namespace, i[1])}}
+{% endfor %}
+{%  for i in volumes %}
+	{{ pvc_layout(i[0], namespace, i[1])}}
+{% endfor %}
