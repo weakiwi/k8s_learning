@@ -1,6 +1,6 @@
 #!/bin/sh
-just_nslookup() {
+for i in $*
+do
 	until nslookup $1; do echo waiting for $1; sleep 2; done;
-}
+done
 
-just_nslookup $1
