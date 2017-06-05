@@ -19,14 +19,14 @@ def hello(name=None):
 #	else:
 #		commands=[]
 	commands=[]
-	for i in services:
+	for i in services.values():
 		if "command" in i:
 			commands.append(i["command"])
 		else:
 			commands.append(None)
 	environment=[value["environment"] for value in dataMap["services"].values() if "environment" in value]  if "services" in dataMap else []
 	labels=[map(lambda x:x.split('=', 1) ,map(lambda x:x.replace('"',''), value["labels"])) for value in dataMap["services"].values() if "labels" in value]  if "services" in dataMap else []
-	mountpaths=[value["volumes"] for value in dataMap["services"].values() if "volumes" in value]  if "services" in dataMap else []
+	mountpaths=[value["volumes"] if "volumes" in value else [] for value in dataMap["services"].values()]  if "services" in dataMap else []
 	volumes = []
 	storages = []
 	counters = 0
@@ -35,6 +35,8 @@ def hello(name=None):
 			volumes.append("volumes" + str(counters))
 			storages.append("100Mi")
 			counters = counters + 1
+		else:
+			volumes.append(None)
 	namespace = "tmpns"
 	return render_template('hello.html', namespace=namespace, services=zip(services, ports), volumes=zip(volumes, storages), statefulsets=zip(services,images,commands,environment,labels,zip(volumes,mountpaths)))
  

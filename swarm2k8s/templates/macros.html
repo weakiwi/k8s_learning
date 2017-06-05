@@ -50,7 +50,7 @@ spec:
 	{% if command %}
 	command: ["{{ command }}"]
 	{% endif %}
-        {% if volumes  %}
+        {% if volumes[1] %}
         {% for i in volumes[1] %}
 	volumeMounts:
 	- name: {{ name }}
@@ -61,10 +61,10 @@ spec:
 	env:
 	{% for i in environment %}
 	- name: {{ i }}
-	  value: {{ environment[i] }}
+	  value: "{{ environment[i] }}"
 	{% endfor %}
 	{% endif %}
-        {% if volumes  %}
+        {% if volumes[0]  %}
       volumes:
       - name: {{ name }}
         persistentVolumeClaim:
