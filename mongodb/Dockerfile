@@ -1,3 +1,3 @@
-FROM daocloud.io/haproxy:1.4
+FROM daocloud.io/haproxy
 
 ADD haproxy.cfg /usr/local/etc/haproxy/
