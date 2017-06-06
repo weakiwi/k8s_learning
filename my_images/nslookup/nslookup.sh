@@ -1,6 +1,6 @@
 #!/bin/sh
 for i in $*
 do
-	until nslookup $1; do echo waiting for $1; sleep 2; done;
+	until nslookup $i; do echo waiting for $i; sleep 2; done;
 done
 
