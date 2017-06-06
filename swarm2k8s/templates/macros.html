@@ -1,5 +1,6 @@
 {% macro service_layout(name, namespace, ports) %}
 <pre>
+{% if ports %}
 apiVersion: v1
 kind: Service
 metadata:
@@ -10,19 +11,20 @@ metadata:
 spec:
   ports:
  {% for i in ports %}
-  - port: {{ ports }}
-    name: random
+  - port: {{ i }}
+    name: {{ name }}{{ i }}
     protocol: TCP
-    targetPort: {{ ports }}
+    targetPort: {{ i }}
   {% endfor %}
 
   clusterIP: None
   selector:
     app: {{name}}
 ---
+{% endif %}
 </pre>
 {% endmacro %}
-{% macro statefulset_layout(name, namespace, image, command, environment, label, volumes) %}
+{% macro statefulset_layout(name, namespace, image, command, environment, label, volumes, depends) %}
 <pre>
 kind: StatefulSet
 apiVersion: apps/v1beta1
@@ -36,11 +38,13 @@ spec:
     metadata:
       labels:
         app: {{ name }} 
-      {% if label %}
+      {% if label or depends %}
       annotations:
+      {% if label %}
       {% for i in label %}
 	{{ i[0] }}: "{{ i[1] }}"
       {% endfor %}
+      {% endif %}
       {% endif %}
     spec:
       containers:
@@ -75,6 +79,7 @@ spec:
 {% endmacro %}
 {% macro pvc_layout(pvc, namespace, storage) %}
 <pre>
+{% if pvc %}
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -89,6 +94,7 @@ spec:
     requests:
       storage: {{ storage }}
 ---
+{% endif %}
 </pre>
 {% endmacro %}
 {% macro volumes_layout(name, pvc) %}
