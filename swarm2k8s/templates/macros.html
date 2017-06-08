@@ -45,6 +45,15 @@ spec:
 	{{ i[0] }}: "{{ i[1] }}"
       {% endfor %}
       {% endif %}
+      {% if depends %}
+        pod.beta.kubernetes.io/init-containers: '[
+            {
+                "name": "initall",
+                "image": "daocloud.io/weakiwi/nslookup",
+                "args": ["{{ depends|array2string }}"]
+            }
+        ]
+      {% endif %}
       {% endif %}
     spec:
       containers:

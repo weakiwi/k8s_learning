@@ -5,6 +5,12 @@ import re
 app = Flask(__name__)
 app.jinja_env.trim_blocks = True  
 app.jinja_env.lstrip_blocks = True  
+def array2string(l):
+	tmpStr=""
+	for i in l:
+		tmpStr = tmpStr + i
+		tmpStr = tmpStr + '", "'
+	return tmpStr
 def del_bracket(l):
 	return l[0]
 def env_deal(l):
@@ -20,6 +26,7 @@ def env_deal_1(l):
 app.add_template_filter(del_bracket, 'del_bracket')
 app.add_template_filter(env_deal, 'env_deal')
 app.add_template_filter(env_deal_1, 'env_deal_1')
+app.add_template_filter(array2string, 'array2string')
  
 @app.route('/hello')
 @app.route('/hello/<name>')
@@ -30,6 +37,7 @@ def hello(name=None):
 	services = dataMap['services']
 	ports=[value["ports"] if "ports" in value else None for value in dataMap["services"].values()]
 	images=[value["image"] for value in dataMap["services"].values()]
+	depends=[value["depends_on"] if "depends_on" in value else None for value in dataMap["services"].values()]
 #	if "commands" in services:
 #		commands=[value["command"] for value in dataMap["services"].values()]
 #	else:
@@ -66,7 +74,7 @@ def hello(name=None):
 			storages.append(None)
 			counters = counters + 1
 	namespace = "tmpns"
-	return render_template('hello.html', namespace=namespace, services=zip(services, ports), volumes=zip(volumes, storages), statefulsets=zip(services,images,commands,tmp_env,labels,zip(volumes,mountpaths)))
+	return render_template('hello.html', namespace=namespace, services=zip(services, ports), volumes=zip(volumes, storages), statefulsets=zip(services,images,commands,tmp_env,labels,zip(volumes,mountpaths), depends))
  
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
