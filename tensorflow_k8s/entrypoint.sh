@@ -16,14 +16,7 @@ export TASK_INDEX=$(hostname| grep -o '[0-9]')
 export JOB_NAME=$(hostname| grep -o -e "worker" -e "ps")
 if [ $ADDRESS ];
 then
-#    while /bin/true
-#    do
-        /ping.py
-#        if [ $? -eq 0 ];
-#        then
-#             break
-#        fi
-#    done
+/ping.py
 fi
 sleep 30
 cd $(dirname $WORKDIR)
