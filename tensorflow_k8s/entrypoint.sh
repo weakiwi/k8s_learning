@@ -16,13 +16,13 @@ export TASK_INDEX=$(hostname| grep -o '[0-9]')
 export JOB_NAME=$(hostname| grep -o -e "worker" -e "ps")
 if [ $ADDRESS ];
 then
-while:
-do
-/ping.py
-if [ $? -eq 0 ];
-then
-break
-fi
-done
+    while /bin/true
+    do
+        /ping.py
+        if [ $? -eq 0 ];
+        then
+             break
+        fi
+    done
 fi
 python $WORKDIR --ps_hosts=$PS_HOST --worker_hosts=$WORK_HOST --job_name=$JOB_NAME --task_index=$TASK_INDEX
