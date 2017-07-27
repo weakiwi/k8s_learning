@@ -1,6 +1,6 @@
 FROM tensorflow/tensorflow:latest
 
-COPY entrypoint.sh /tmp
-RUN cat /tmp/entrypoint.sh > /run_jupyter.sh
+COPY entrypoint.sh /
+RUN chmod +x entrypoint.sh
 
-CMD ["/tmp/entrypoint.sh"]
+CMD ["/entrypoint.sh"]
