@@ -1,5 +1,10 @@
 echo a
 #python ping.py || exit 1
-python ping.py 
-echo $?
-
+while /bin/true
+do
+    python ping.py 
+    if [ $? -eq 0 ];
+    then
+        break
+    fi
+done
