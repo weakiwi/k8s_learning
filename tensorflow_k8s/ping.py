@@ -192,12 +192,10 @@ def verbose_ping(dest_addr, timeout = 2, count = 4,sleep_time=2):
         except socket.gaierror, e:
             counter=counter-1
             print "failed. (socket error: '%s') with "   % e[1] + dest_addr
-        if counter==0:
-            exit(1)
 
 
 if __name__ == '__main__':
     address = os.environ.get("ADDRESS")
     exec_count = os.environ.get("EXEC_COUNT")
     for i in address.split(','):
-        verbose_ping(i,count=1,sleep_time=0)
+        verbose_ping(i,count=100,sleep_time=1)
