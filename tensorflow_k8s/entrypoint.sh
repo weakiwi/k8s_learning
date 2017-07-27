@@ -8,7 +8,6 @@ OTHER_COMMAND=
 function check_env() {
     if [ -z "$1" ];
     then
-        echo "$1 is empty" 
         exit 1
     fi
 }
