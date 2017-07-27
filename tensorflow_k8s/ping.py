@@ -191,7 +191,7 @@ def verbose_ping(dest_addr, timeout = 2, count = 4,sleep_time=2):
             break
         except socket.gaierror, e:
             counter=counter-1
-            print("failed")
+            print "failed. (socket error: '%s') with "   % e[1] + dest_addr
         if counter==0:
             exit(1)
 
