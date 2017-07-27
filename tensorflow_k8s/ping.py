@@ -51,7 +51,6 @@
     $Author: $
 """
 
-
 import os, sys, socket, struct, select, time
 
 if sys.platform == "win32":
@@ -183,17 +182,21 @@ def verbose_ping(dest_addr, timeout = 2, count = 4,sleep_time=2):
     Send >count< ping to >dest_addr< with the given >timeout< and display
     the result.
     """
+    counter=count
     for i in xrange(count):
-        print "ping %s..." % dest_addr,
+        #print "ping %s.1." % dest_addr
         try:
-            print socket.gethostbyname(dest_addr)
+            print(socket.gethostbyname(dest_addr))
             time.sleep(sleep_time)
-        except socket.gaierror, e:
-            print "failed. (socket error: '%s')" % e[1]
             break
+        except socket.gaierror, e:
+            counter=counter-1
+            print("failed")
+        if counter==0:
+            exit(1)
 
 
 if __name__ == '__main__':
     address = os.environ.get("ADDRESS")
     for i in address.split(','):
-        verbose_ping(i,count=100)
+        verbose_ping(i,count=30,sleep_time=1)
