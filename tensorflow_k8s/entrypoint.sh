@@ -26,6 +26,7 @@ tmp_str_1=$(echo $ADDRESS| sed 's/\,/\&\& ping -c1 /g')
 new_str=${tmp_str}${tmp_str_1}
 while /bin/true
 do
+        echo $new_str
         eval $new_str
         if [ $? -eq 0 ];
         then
