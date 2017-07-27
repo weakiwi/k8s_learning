@@ -8,7 +8,7 @@ TASK_INDEX=
 OTHER_COMMAND=
 
 function check_env() {
-    if [ -z "$1" ];
+    if [ -z $1 ];
     then
         exit 1
     fi
