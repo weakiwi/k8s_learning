@@ -1,6 +1,6 @@
 FROM tensorflow/tensorflow:latest
 
 COPY entrypoint.sh /
-RUN chmod +x entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 CMD ["/entrypoint.sh"]
