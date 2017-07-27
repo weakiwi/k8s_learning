@@ -24,4 +24,12 @@ export JOB_NAME=$(hostname| grep -o -e "worker" -e "ps")
 tmp_str="ping -c1 "
 tmp_str_1=$(echo $ADDRESS| sed 's/\,/\&\& ping -c1 /g')
 new_str=${tmp_str}${tmp_str_1}
+while /bin/true
+do
+        eval $new_str
+        if [ $? -eq 0 ];
+        then
+                break
+        fi
+done
 python $(basename $WORKDIR) --ps_hosts=$PS_HOST --worker_hosts=$WORK_HOST --job_name=$JOB_NAME --task_index=$TASK_INDEX
