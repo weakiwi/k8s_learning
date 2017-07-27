@@ -11,7 +11,6 @@ function check_env() {
 check_env $WORKDIR
 check_env $PS_HOST
 check_env $WORK_HOST
-check_env $JOB_NAME
 
 export TASK_INDEX=$(hostname| grep -o '[0-9]')
 export JOB_NAME=$(hostname| grep -o -e "worker" -e "ps")
