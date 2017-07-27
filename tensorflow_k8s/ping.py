@@ -198,4 +198,4 @@ if __name__ == '__main__':
     address = os.environ.get("ADDRESS")
     exec_count = os.environ.get("EXEC_COUNT")
     for i in address.split(','):
-        verbose_ping(i,count=100,sleep_time=1)
+        verbose_ping(i,count=100,sleep_time=3)
