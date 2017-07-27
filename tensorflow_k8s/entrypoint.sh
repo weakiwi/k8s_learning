@@ -1,11 +1,5 @@
 #!/bin/bash
 set -ex
-WORKDIR=
-PS_HOST=
-WORK_HOST=
-JOB_NAME=
-TASK_INDEX=
-OTHER_COMMAND=
 
 function check_env() {
     if [ -z $1 ];
