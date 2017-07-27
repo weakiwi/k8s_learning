@@ -14,7 +14,7 @@ check_env $WORK_HOST
 
 export TASK_INDEX=$(hostname| grep -o '[0-9]')
 export JOB_NAME=$(hostname| grep -o -e "worker" -e "ps")
-if [ $ADDRESS ];
+#if [ $ADDRESS ];
 #then
 ##/ping.py
 #fi
