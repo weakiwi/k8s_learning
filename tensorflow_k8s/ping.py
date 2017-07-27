@@ -178,7 +178,7 @@ def do_one(dest_addr, timeout):
     return delay
 
 
-def verbose_ping(dest_addr, timeout = 2, count = 4):
+def verbose_ping(dest_addr, timeout = 2, count = 4,sleep_time=2):
     """
     Send >count< ping to >dest_addr< with the given >timeout< and display
     the result.
@@ -186,20 +186,14 @@ def verbose_ping(dest_addr, timeout = 2, count = 4):
     for i in xrange(count):
         print "ping %s..." % dest_addr,
         try:
-            delay  =  do_one(dest_addr, timeout)
+            print socket.gethostbyname(dest_addr)
+            time.sleep(sleep_time)
         except socket.gaierror, e:
             print "failed. (socket error: '%s')" % e[1]
             break
-
-        if delay  ==  None:
-            print "failed. (timeout within %ssec.)" % timeout
-        else:
-            delay  =  delay * 1000
-            print "get ping in %0.4fms" % delay
-    print
 
 
 if __name__ == '__main__':
     address = os.environ.get("ADDRESS")
     for i in address.split(','):
-        verbose_ping(i,count = 100)
+        verbose_ping(i,count=100)
