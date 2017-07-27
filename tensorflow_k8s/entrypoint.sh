@@ -19,11 +19,6 @@ export JOB_NAME=$(hostname| grep -o -e "worker" -e "ps")
 ##/ping.py
 #fi
 cd $(dirname $WORKDIR)
-if [ ${JOB_NAME}x == "ps"x ];
-then
+sleep 10
+cat /data/hosts >> /etc/hosts
 python $(basename $WORKDIR) --ps_hosts=$PS_HOST --worker_hosts=$WORK_HOST --job_name=$JOB_NAME --task_index=$TASK_INDEX
-else
-        sleep 10
-        cat /data/hosts >> /etc/hosts
-        python $(basename $WORKDIR) --ps_hosts=$PS_HOST --worker_hosts=$WORK_HOST --job_name=$JOB_NAME --task_index=$TASK_INDEX
-fi
