@@ -1,6 +1,6 @@
 FROM tensorflow/tensorflow:latest
 
 COPY entrypoint.sh /
-RUN chmod +x /entrypoint.sh
+RUN chmod 777 /entrypoint.sh
 
-CMD ["bash /entrypoint.sh"]
+CMD ["/bin/bash /entrypoint.sh"]
