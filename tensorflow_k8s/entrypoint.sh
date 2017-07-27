@@ -15,5 +15,5 @@ check_env $ADDRESS
 
 export TASK_INDEX=$(hostname| grep -o '[0-9]')
 export JOB_NAME=$(hostname| grep -o -e "worker" -e "ps")
-./portcheck
+/portcheck
 python $WORKDIR --ps_hosts=$PS_HOST --worker_hosts=$WORK_HOST --job_name=$JOB_NAME --task_index=$TASK_INDEX
