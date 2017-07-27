@@ -18,7 +18,7 @@ export JOB_NAME=$(hostname| grep -o -e "worker" -e "ps")
 #then
 ##/ping.py
 #fi
-#cd $(dirname $WORKDIR)
+cd $(dirname $WORKDIR)
 #sleep 10
 #cat /data/hosts >> /etc/hosts
 /ipcheck
