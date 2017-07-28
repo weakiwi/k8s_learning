@@ -24,4 +24,9 @@ cd $(dirname $WORKDIR)
 /ipcheck
 
 #tensorflow start
-python $(basename $WORKDIR) --ps_hosts=$PS_HOST --worker_hosts=$WORK_HOST --job_name=$JOB_NAME --task_index=$TASK_INDEX
+if [ -z $CHECKPOINT_DIR ];
+then
+    python $(basename $WORKDIR) --ps_hosts=$PS_HOST --worker_hosts=$WORK_HOST --job_name=$JOB_NAME --task_index=$TASK_INDEX
+else
+    python /usr/local/bin/tensorboard --logdir $CHECKPOINT_DIR --host 0.0.0.0
+fi

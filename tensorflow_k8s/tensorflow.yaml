@@ -24,7 +24,7 @@ spec:
       containers:
       - name: tensorflow-ps
         imagePullPolicy: IfNotPresent
-        image: daocloud.io/daocloud/tensorflow-cluster
+        image: registry.cn-hangzhou.aliyuncs.com/weakiwi/tensorflow_k8s
         env:
         - name: CMDPARAMS
           value: "{{cmdparams}}"
@@ -84,7 +84,7 @@ spec:
       containers:
       - name: tensorflow-worker
         imagePullPolicy: IfNotPresent
-        image: daocloud.io/daocloud/tensorflow-cluster
+        image: registry.cn-hangzhou.aliyuncs.com/weakiwi/tensorflow_k8s
         env:
         - name: CMDPARAMS
           value: "{{cmdparams}}"
@@ -92,7 +92,7 @@ spec:
           value: "{{scriptpath}}"
         - name: PS_HOST
           value: "{{psservers}}"
-        - name: WORK_HOS
+        - name: WORK_HOST
           value: "{{workerservers}}"
         - name: ADDRESS
           value: "{{ALLPODNAME}}"
@@ -147,7 +147,7 @@ spec:
         image: daocloud.io/daocloud/tensorflow
         ports:
         - containerPort: 6006
-        args: ["tensordash","--logdir","{{logdir}}"]
+		args: ["/usr/bin/python","/usr/local/bin/tensorboard","--logdir","{{logdir}}","--host","0.0.0.0"]
         volumeMounts:
         - name: worker-data
           mountPath: "/data"

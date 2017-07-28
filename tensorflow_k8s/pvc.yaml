@@ -1,0 +1,75 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: nstest4
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1beta1
+metadata:
+  name: portworxshare-tensorflow
+provisioner: kubernetes.io/portworx-volume
+parameters:
+  repl: "1"
+  shared: "true"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc4
+  namespace: nstest4
+  annotations:
+    volume.beta.kubernetes.io/storage-class: portworxshare-tensorflow
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: testclusterkodexplore
+  namespace: nstest4
+spec:
+  serviceName: testclusterkodexplore
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: testclusterkodexplore
+    spec:
+      containers:
+      - name: kodexplore
+        imagePullPolicy: IfNotPresent
+        image: daocloud.io/daocloud/dao-kodexplore:tf
+        env:
+        - name: PASSWORD
+          value: "82809391996"
+        #args: ["/usr/local/bin/etcd","-name=node2","-advertise-client-urls=http://node2:2379","-initial-advertise-peer-urls=http://node2:2380","-listen-client-urls=http://node2:2379","-listen-peer-urls=http://node2:2380","-initial-cluster=node1=http://node1:2380,node2=http://node2:2380,node3=http://node3:2380","--data-dir","/data","-initial-cluster-state=new","-initial-cluster-token=etcd-cluster-1","-heartbeat-interval=500","-election-timeout=5000"]
+        volumeMounts:
+        - name: worker-data
+          mountPath: "/data/http/data/User/admin/home"
+      restartPolicy: Always
+      volumes:
+      - name: worker-data
+        persistentVolumeClaim:
+          claimName: pvc4
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kodexplore1
+  namespace: nstest4
+  labels:
+    io.daocloud.service.role: "master"
+    io.daocloud.service.console: "true"
+    app: kodexplore1
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    nodePort: 60012
+    targetPort: 80
+  selector:
+    app: testclusterkodexplore
