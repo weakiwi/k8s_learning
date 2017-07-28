@@ -66,7 +66,7 @@ func mustGetStringVar(c *cli.Context, key string) string {
 }
 
 func portCheck(address string) error {
-	_, err := net.LookupIP(address)
+	_, err := net.LookupIP(strings.TrimSpace(address))
 	if err == nil {
 		return nil
 	}
