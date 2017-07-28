@@ -1,0 +1,189 @@
+kind: StatefulSet
+apiVersion: apps/v1beta1
+metadata:
+  name: {{clustername}}tensorflow-ps
+  namespace: {{usernamespace}}
+spec:
+  serviceName: {{clustername}}tensorflow-ps
+  replicas: {{pscount}}
+  template:
+    metadata:
+      labels:
+        app: {{clustername}}tensorflow-ps
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - {{clustername}}tensorflow-worker
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: tensorflow-ps
+        imagePullPolicy: IfNotPresent
+        image: daocloud.io/daocloud/tensorflow-cluster
+        env:
+        - name: CMDPARAMS
+          value: "{{cmdparams}}"
+        - name: WORKDIR
+          value: "{{scriptpath}}"
+        - name: PS_HOST
+          value: "{{psservers}}"
+        - name: WORK_HOST
+          value: "{{workerservers}}"
+        - name: ADDRESS
+          value: "{{ALLPODNAME}}"
+        volumeMounts:
+        - name: worker-data
+          mountPath: "/data"
+        resources:
+          requests:
+            cpu: 1000m
+            memory: {{request_memory}}Mi
+          limits:
+            cpu: 1000m
+            memory: {{limit_memory}}Mi
+      restartPolicy: Always
+      volumes:
+      - name: worker-data
+        persistentVolumeClaim:
+          claimName: {{sharevolume}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{clustername}}tensorflow-ps
+  namespace: {{usernamespace}}
+  labels:
+    app: {{clustername}}tensorflow-ps
+spec:
+  ports:
+  - port: 2222
+    protocol: TCP
+    targetPort: 2222
+  clusterIP: None
+  selector:
+    app: {{clustername}}tensorflow-ps
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: {{clustername}}tensorflow-worker
+  namespace: {{usernamespace}}
+spec:
+  serviceName: {{clustername}}tensorflow-worker
+  replicas: {{workercount}}
+  template:
+    metadata:
+      labels:
+        app: {{clustername}}tensorflow-worker
+    spec:
+      containers:
+      - name: tensorflow-worker
+        imagePullPolicy: IfNotPresent
+        image: daocloud.io/daocloud/tensorflow-cluster
+        env:
+        - name: CMDPARAMS
+          value: "{{cmdparams}}"
+        - name: WORKDIR
+          value: "{{scriptpath}}"
+        - name: PS_HOST
+          value: "{{psservers}}"
+        - name: WORK_HOS
+          value: "{{workerservers}}"
+        - name: ADDRESS
+          value: "{{ALLPODNAME}}"
+        volumeMounts:
+        - name: worker-data
+          mountPath: "/data"
+        resources:
+          requests:
+            cpu: 500m
+            memory: {{request_memory}}Mi
+          limits:
+            cpu: 1000m
+            memory: {{limit_memory}}Mi
+      restartPolicy: Always
+      volumes:
+      - name: worker-data
+        persistentVolumeClaim:
+          claimName: {{sharevolume}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{clustername}}tensorflow-worker
+  namespace: {{usernamespace}}
+  labels:
+    app: {{clustername}}tensorflow-worker
+spec:
+  ports:
+  - port: 2222
+    protocol: TCP
+    targetPort: 2222
+  clusterIP: None
+  selector:
+    app: {{clustername}}tensorflow-worker
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{clustername}}tensordash
+  namespace: {{usernamespace}}
+  labels:
+    app: {{clustername}}tensordash
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{clustername}}tensordash
+    spec:
+      containers:
+      - name: {{clustername}}tensordash
+        image: daocloud.io/daocloud/tensorflow
+        ports:
+        - containerPort: 6006
+        args: ["tensordash","--logdir","{{logdir}}"]
+        volumeMounts:
+        - name: worker-data
+          mountPath: "/data"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 6006
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+        resources:
+          requests:
+            cpu: 50m
+            memory: 100Mi
+          limits:
+            cpu: 50m
+            memory: 100Mi
+      restartPolicy: Always  
+      volumes:
+      - name: worker-data
+        persistentVolumeClaim:
+          claimName: {{sharevolume}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{clustername}}tensordash
+  namespace: {{usernamespace}}
+  labels:
+    io.daocloud.service.role: "master"
+    io.daocloud.service.console: "true"
+    app: {{clustername}}tensordash
+spec:
+  type: NodePort
+  ports:
+  - port: 6006
+    nodePort: {{nodePort}}
+    targetPort: 6006
+  selector:
+    app: {{clustername}}tensordash
