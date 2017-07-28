@@ -17,7 +17,7 @@ if [ -z $CHECKPOINT_DIR ];
     
     
     #get environemnt from hostname.Please follow the name rules to make it works
-    export TASK_INDEX=$(hostname| grep -o '[0-9]')
+    export TASK_INDEX=$(hostname| awk -F"-" '{print $1}')
     export JOB_NAME=$(hostname| grep -o -e "worker" -e "ps")
     cd $(dirname $WORKDIR)
     
