@@ -1,6 +1,5 @@
 #!/bin/bash
 set -ex
-#cat /etc/hosts | tail -1 >> /data/hosts
 function check_env() {
     if [ -z $1 ];
     then
@@ -14,12 +13,7 @@ check_env $WORK_HOST
 
 export TASK_INDEX=$(hostname| grep -o '[0-9]')
 export JOB_NAME=$(hostname| grep -o -e "worker" -e "ps")
-#if [ $ADDRESS ];
-#then
-##/ping.py
-#fi
 cd $(dirname $WORKDIR)
-#sleep 10
-#cat /data/hosts >> /etc/hosts
+
 /ipcheck
 python $(basename $WORKDIR) --ps_hosts=$PS_HOST --worker_hosts=$WORK_HOST --job_name=$JOB_NAME --task_index=$TASK_INDEX

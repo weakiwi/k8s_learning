@@ -1,4 +1,4 @@
-FROM tensorflow/tensorflow:latest
+FROM daocloud.io/daocloud/tensorflow-cluster
 
 COPY entrypoint.sh /
 COPY ipcheck /
