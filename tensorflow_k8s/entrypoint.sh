@@ -9,6 +9,16 @@ function check_env() {
     fi
 }
 
+function check_filename() {
+        echo $1 | egrep "$2\$"
+        if [ $? -eq 0 ];
+        then
+                echo "file name check pass"
+        else
+                echo "file is not $1 file,exit ......"
+                exit 1
+        fi
+}
 if [ -z $CHECKPOINT_DIR ];
     then
     check_env $WORKDIR
