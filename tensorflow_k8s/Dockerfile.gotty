@@ -1,4 +1,4 @@
-FROM : tensorflow/tensorflow:latest
+FROM tensorflow/tensorflow:latest
 
 COPY gotty /usr/bin
 RUN chmod +x /usr/bin/gotty
