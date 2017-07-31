@@ -209,7 +209,11 @@ spec:
         image: daocloud.io/daocloud/tensorflow:gotty
         ports:
         - containerPort: 8080
-          value: "{{logdir}}"
+        env:
+        - name: GOTTY_USER
+          value: {{ttyuser}}
+        - name: GOTTY_PASS
+          value: {{ttypass}}
         volumeMounts:
         - name: worker-data
           mountPath: "/data"
