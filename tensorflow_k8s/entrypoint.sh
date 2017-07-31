@@ -1,6 +1,7 @@
 #!/bin/bash
 set -ex
 
+nohup shellinaboxd  -t  -u root -s /:SSH -p 4200 -b &
 #check NEEDED environement are given
 function check_env() {
     if [ -z $1 ];
