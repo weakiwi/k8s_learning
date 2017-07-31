@@ -189,3 +189,57 @@ spec:
     targetPort: 6006
   selector:
     app: {{clustername}}tensordash
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{clustername}}tensortty
+  namespace: {{usernamespace}}
+  labels:
+    app: {{clustername}}tensortty
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{clustername}}tensortty
+    spec:
+      containers:
+      - name: {{clustername}}tensortty
+        image: daocloud.io/daocloud/tensorflow:gotty
+        ports:
+        - containerPort: 8080
+          value: "{{logdir}}"
+        volumeMounts:
+        - name: worker-data
+          mountPath: "/data"
+        resources:
+          requests:
+            cpu: 50m
+            memory: 100Mi
+          limits:
+            cpu: 50m
+            memory: 100Mi
+      restartPolicy: Always  
+      volumes:
+      - name: worker-data
+        persistentVolumeClaim:
+          claimName: {{sharevolume}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{clustername}}tensortty
+  namespace: {{usernamespace}}
+  labels:
+    io.daocloud.service.role: "master"
+    io.daocloud.service.console: "true"
+    app: {{clustername}}tensortty
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    nodePort: {{nodePort}}
+    targetPort: 8080
+  selector:
+    app: {{clustername}}tensortty
