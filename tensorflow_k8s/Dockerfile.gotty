@@ -6,4 +6,4 @@ RUN chmod +x /usr/bin/gotty
 
 WORKDIR "/data"
 ENTRYPOINT ["/usr/bin/gotty"]
-CMD ["--permit-write","--reconnect","/bin/bash"]
+CMD ["--permit-write","--credential", "$GOTTY_USER:$GOTTY_PASS", "--reconnect","/bin/bash"]
