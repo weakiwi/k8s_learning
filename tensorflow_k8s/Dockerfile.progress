@@ -1,0 +1,9 @@
+FROM jazzdd/alpine-flask
+
+RUN "pip install tensorflow"
+
+
+WORKDIR "/data"
+COPY get_progress.py /
+RUN chmod +x /get_progress.py
+ENTRYPOINT ["/get_progress.py"]
