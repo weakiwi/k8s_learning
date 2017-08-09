@@ -1,7 +1,7 @@
 FROM jazzdd/alpine-flask
 
-RUN "mkdir -p /root/.pip/"
-COPY pip.conf /root/.pip/
+RUN "mkdir -p ~/.pip/"
+COPY pip.conf ~/.pip/
 RUN "pip install tensorflow"
 
 
