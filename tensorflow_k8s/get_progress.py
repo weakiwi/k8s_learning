@@ -18,6 +18,11 @@ from flask import Flask
 
 app = Flask(__name__)
 
+@app.route('/checkall')
+    print train_data_pos
+    print test_data_pos
+    print checkpoint_data_pos
+    return
 @app.route('/getprogress')
 def getprogress():
 	batch_size = request.args.get("batch_size")
