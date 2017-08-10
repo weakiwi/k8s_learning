@@ -18,7 +18,7 @@ from flask import Flask
 
 app = Flask(__name__)
 
-@app.route('/getprogress/')
+@app.route('/getprogress')
 def getprogress():
 	batch_size = request.args.get("batch_size")
 	epoch_num = request.args.get("epoch_num")
