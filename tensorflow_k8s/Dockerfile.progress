@@ -6,7 +6,5 @@ RUN pip install --upgrade pip
 RUN pip install flask
 
 
-WORKDIR "/data"
-COPY get_progress.py /
-RUN chmod +x /get_progress.py
-ENTRYPOINT ["/get_progress.py"]
+WORKDIR "/index"
+ENTRYPOINT ["/index/get_progress.py"]
