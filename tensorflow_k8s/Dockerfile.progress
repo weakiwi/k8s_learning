@@ -7,5 +7,6 @@ RUN pip install flask
 
 RUN mkdir -p /index
 COPY get_progress.py /index
+RUN chmod 777 /index/get_progress.py
 WORKDIR "/index"
 ENTRYPOINT ["/index/get_progress.py"]
