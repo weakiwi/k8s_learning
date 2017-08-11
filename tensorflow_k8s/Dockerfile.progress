@@ -5,7 +5,7 @@ COPY pip.conf ~/.pip/
 RUN pip install --upgrade pip
 RUN pip install flask
 
-
+RUN mkdir -p /index
 COPY get_progress.py /index
 WORKDIR "/index"
 ENTRYPOINT ["/index/get_progress.py"]
