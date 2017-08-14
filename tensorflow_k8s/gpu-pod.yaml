@@ -1,0 +1,38 @@
+piVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: gpu-pod-dp
+spec:
+  template:
+    metadata:
+      name: gpu-pod
+      labels:
+        app: gpu-pod
+    spec:
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        effect: "NoSchedule"
+     # nodeSelector:
+     #   node-role.kubernetes.io/master: ""
+      containers:
+      - name: gpu-container-1
+        image: tensorflow/tensorflow:latest-gpu
+        env:
+        - name: LD_LIBRARY_PATH
+          value: "/usr/lib/nvidia"
+        resources:
+          limits:
+            alpha.kubernetes.io/nvidia-gpu: 1
+        volumeMounts:
+        - mountPath: /usr/local/nvidia/bin
+          name: bin
+        - mountPath: /usr/lib/nvidia
+          name: lib
+      volumes:
+      - hostPath:
+          path: /usr/local/cuda-8.0/bin
+        name: bin
+      - hostPath:
+          path: /var/lib/nvidia-docker/volumes/nvidia_driver/375.26/lib64/
+        name: lib
+
