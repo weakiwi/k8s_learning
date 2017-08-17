@@ -1,0 +1,59 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{clustername}}tensorprogress
+  namespace: {{usernamespace}}
+  labels:
+    app: {{clustername}}tensorprogress
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{clustername}}tensortty
+    spec:
+      containers:
+      - name: {{clustername}}tensortty
+        image: daocloud.io/daocloud/tensorflow:progress
+        ports:
+        - containerPort: 5000
+        env:
+        - name: TRAIN_DATA_POS
+          value: {{traindatapos}}
+        - name: TEST_DATA_POS
+          value: {{testdatapos}}
+        - name: CHECKPOINT_DATA_POS
+          value: {{checkpointdatapos}}
+        volumeMounts:
+        - name: worker-data
+          mountPath: "/data"
+        resources:
+          requests:
+            cpu: 50m
+            memory: 100Mi
+          limits:
+            cpu: 50m
+            memory: 100Mi
+      restartPolicy: Always  
+      volumes:
+      - name: worker-data
+        persistentVolumeClaim:
+          claimName: {{sharevolume}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{clustername}}tensorprogress
+  namespace: {{usernamespace}}
+  labels:
+    io.daocloud.service.role: "master"
+    io.daocloud.service.console: "true"
+    app: {{clustername}}tensorprogress
+spec:
+  type: NodePort
+  ports:
+  - port: 5000
+    nodePort: {{nodePort}}
+    targetPort: 5000
+  selector:
+    app: {{clustername}}tensorprogress
