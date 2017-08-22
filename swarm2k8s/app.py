@@ -24,13 +24,13 @@ def env_deal_1(l):
 	if type(l) == dict:
 		return l.values()
 def convert_command(l):
+    l = l.replace("{{ ", "{{")
+    l = l.replace(" }}", "}}")
     l = l.split()
     tmplen = len(l)
     tmp = ""
     for i in l:
-        if i == "{{" and tmplen != 1:
-            tmp = tmp + i
-        if  i == "}}" and tmplen != 1:
+        if tmplen != 1:
             tmp = tmp + i + '", "'
         else:
             tmp = tmp + i + '" ,"'
