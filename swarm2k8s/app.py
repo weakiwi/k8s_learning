@@ -28,7 +28,7 @@ def convert_command(l):
     tmp = ""
     for i in l:
         if i != "{{" or i != "}}":
-            tmp = tmp + i + "] ,["
+            tmp = tmp + i + '" ,"'
         else:
             tmp = tmp + i
     return tmp
