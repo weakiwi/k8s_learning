@@ -38,7 +38,9 @@ spec:
     metadata:
       labels:
         app: {{ name }} 
+      {% if applabel %}
         applabel: {{ applabel }}
+      {% endif %}
       {% if label or depends %}
       annotations:
       {% if label %}
