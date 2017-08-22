@@ -23,10 +23,17 @@ def env_deal_1(l):
 		return l.split("=",1)[1]
 	if type(l) == dict:
 		return l.values()
+def convert_command(l):
+    l = l.split()
+    tmp = ""
+    for i in l:
+        tmp = tmp + "] ,["
+    return tmp
 app.add_template_filter(del_bracket, 'del_bracket')
 app.add_template_filter(env_deal, 'env_deal')
 app.add_template_filter(env_deal_1, 'env_deal_1')
 app.add_template_filter(array2string, 'array2string')
+app.add_template_filter(convert_command, 'convert_command')
  
 @app.route('/')
 def hello():

@@ -64,7 +64,7 @@ spec:
         imagePullPolicy: IfNotPresent
         image: {{ image }}
 	{% if command %}
-	command: ["{{ command }}"]
+	command: ["{{ command|convert_command }}"]
 	{% endif %}
         {% if volumes[1] %}
         {% for i in volumes[1] %}
