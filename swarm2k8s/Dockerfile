@@ -4,4 +4,5 @@ FROM jazzdd/alpine-flask
 COPY app.py /app
 ADD templates/ /app
 ADD PyYAML-3.12.tar.gz /app
-RUN /usr/bin/python /app/PyYAML-3.12/setup.py install
+RUN cd /app/PyYAML-3.12
+RUN /usr/bin/python setup.py install
