@@ -31,7 +31,7 @@ app.add_template_filter(array2string, 'array2string')
 @app.route('/hello')
 @app.route('/hello/<name>')
 def hello(name=None):
-	f = open('mongo-swarm.yaml')
+	f = open('docker-compose.yaml')
 	dataMap = yaml.load(f)
 	f.close()
 	services = dataMap['services']
