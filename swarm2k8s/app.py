@@ -25,12 +25,16 @@ def env_deal_1(l):
 		return l.values()
 def convert_command(l):
     l = l.split()
+    tmplen = len(l)
     tmp = ""
     for i in l:
-        if i != "{{" and i != "}}":
-            tmp = tmp + i + '" ,"'
-        else:
+        if i == "{{" and tmplen != 1:
             tmp = tmp + i
+        if  i == "}}" and tmplen != 1:
+            tmp = tmp + i + '", "'
+        else:
+            tmp = tmp + i + '" ,"'
+        tmplen = tmplen - 1
     return tmp
 app.add_template_filter(del_bracket, 'del_bracket')
 app.add_template_filter(env_deal, 'env_deal')
