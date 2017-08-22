@@ -4,4 +4,4 @@ FROM jazzdd/alpine-flask
 COPY app.py /app
 COPY templates/ /app
 COPY PyYAML-3.12/ /app
-RUN pyhon /app/PyYAML-3.12/setup.py install
+RUN /usr/bin/python /app/PyYAML-3.12/setup.py install
