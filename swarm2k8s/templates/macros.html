@@ -24,7 +24,7 @@ spec:
 {% endif %}
 </pre>
 {% endmacro %}
-{% macro statefulset_layout(name, namespace, image, command, environment, label, volumes, depends) %}
+{% macro statefulset_layout(name, namespace, image, command, environment, label, volumes, depends, applabel) %}
 <pre>
 kind: StatefulSet
 apiVersion: apps/v1beta1
@@ -38,6 +38,7 @@ spec:
     metadata:
       labels:
         app: {{ name }} 
+        applabel: {{ applabel }}
       {% if label or depends %}
       annotations:
       {% if label %}

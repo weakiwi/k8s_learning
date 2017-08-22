@@ -28,9 +28,11 @@ app.add_template_filter(env_deal, 'env_deal')
 app.add_template_filter(env_deal_1, 'env_deal_1')
 app.add_template_filter(array2string, 'array2string')
  
-@app.route('/hello')
-@app.route('/hello/<name>')
-def hello(name=None):
+@app.route('/')
+def hello():
+	namespace = "tmpns"
+        namespace = request.args.get("namespace")
+        applabel = request.args.get("applabel")
 	f = open('docker-compose.yaml')
 	dataMap = yaml.load(f)
 	f.close()
@@ -73,8 +75,7 @@ def hello(name=None):
 			volumes.append(None)
 			storages.append(None)
 			counters = counters + 1
-	namespace = "tmpns"
-	return render_template('hello.html', namespace=namespace, services=zip(services, ports), volumes=zip(volumes, storages), statefulsets=zip(services,images,commands,tmp_env,labels,zip(volumes,mountpaths), depends))
+	return render_template('hello.html', namespace=namespace, services=zip(services, ports), volumes=zip(volumes, storages), statefulsets=zip(services,images,commands,tmp_env,labels,zip(volumes,mountpaths), depends, applabel))
  
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
