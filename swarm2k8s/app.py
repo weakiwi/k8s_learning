@@ -75,7 +75,7 @@ def hello():
 			volumes.append(None)
 			storages.append(None)
 			counters = counters + 1
-	return render_template('hello.html', namespace=namespace, services=zip(services, ports), volumes=zip(volumes, storages), statefulsets=zip(services,images,commands,tmp_env,labels,zip(volumes,mountpaths), depends, applabel))
+	return render_template('hello.html', namespace=namespace, services=zip(services, ports), volumes=zip(volumes, storages), statefulsets=zip(services,images,commands,tmp_env,labels,zip(volumes,mountpaths), depends),applabel)
  
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
