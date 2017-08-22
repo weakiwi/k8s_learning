@@ -27,7 +27,7 @@ def convert_command(l):
     l = l.split()
     tmp = ""
     for i in l:
-        tmp = tmp + "] ,["
+        tmp = i + "] ,["
     return tmp
 app.add_template_filter(del_bracket, 'del_bracket')
 app.add_template_filter(env_deal, 'env_deal')
