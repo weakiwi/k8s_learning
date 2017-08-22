@@ -130,6 +130,32 @@ kind: Namespace
 apiVersion: v1
 metadata:
   name: {{ namespace }}
+  annotations:
+    net.beta.kubernetes.io/network-policy: |
+      {
+        "ingress": {
+          "isolation": "DefaultDeny"
+        }
+      }
+---
+</pre>
+{% endmacro %}
+{% macro networkpolicy_layout(namespace, applabel) %}
+<pre>
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ applabel }}
+  namespace: {{ namespace }}
+spec:
+  podSelector:
+    matchExpressions:
+      - {key: inns, operator: In, values: ["{{ applabel }}"]}
+  ingress: 
+    - from:
+        - podSelector:
+             matchExpressions:
+               - {key: inns, operator: In, values: ["{{ applabel }}"]}
 ---
 </pre>
 {% endmacro %}
