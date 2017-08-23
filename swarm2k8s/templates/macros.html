@@ -124,12 +124,13 @@ spec:
           mountPath: "{{ path }}"
 </pre>
 {% endmacro %}
-{% macro namespace_layout(namespace) %}
+{% macro namespace_layout(namespace, applabel) %}
 <pre>
 kind: Namespace
 apiVersion: v1
 metadata:
   name: {{ namespace }}
+  {% if applabel %}
   annotations:
     net.beta.kubernetes.io/network-policy: |
       {
@@ -137,6 +138,7 @@ metadata:
           "isolation": "DefaultDeny"
         }
       }
+  {% endif %}
 ---
 </pre>
 {% endmacro %}

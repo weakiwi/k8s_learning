@@ -3,7 +3,7 @@
 {% from "macros.html" import pvc_layout with context %}
 {% from "macros.html" import statefulset_layout with context %}
 {% from "macros.html" import networkpolicy_layout with context %}
-{{ namespace_layout(namespace) }}
+{{ namespace_layout(namespace, applabel) }}
 {%  for i in statefulsets %}
 	{{ statefulset_layout(i[0], namespace, i[1], i[2],i[3], i[4], i[5], i[6], applabel) }}
 {% endfor %}
