@@ -33,7 +33,7 @@ def convert_command(l):
         if tmplen != 1:
             tmp = tmp + i + '", "'
         else:
-            tmp = tmp + i + '" ,"'
+            tmp = tmp + i
         tmplen = tmplen - 1
     return tmp
 app.add_template_filter(del_bracket, 'del_bracket')
