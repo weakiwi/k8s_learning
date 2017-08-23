@@ -13,4 +13,6 @@
 {%  for i in volumes %}
 	{{ pvc_layout(i[0], namespace, i[1])}}
 {% endfor %}
+{% if applabel %}
 {{ networkpolicy_layout(namespace, applabel) }}
+{% endif %}
