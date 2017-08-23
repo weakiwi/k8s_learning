@@ -7,9 +7,14 @@ app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True  
 def array2string(l):
 	tmpStr=""
+        tmplen = len(l)
 	for i in l:
+            if tmplen != 1:
 		tmpStr = tmpStr + i
 		tmpStr = tmpStr + '", "'
+            else:
+                tmpStr = tmpStr + i
+            tmplen = tmplen - 1
 	return tmpStr
 def del_bracket(l):
 	return l[0]
