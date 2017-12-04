@@ -52,6 +52,11 @@ def hello():
 	namespace = "tmpns"
         namespace = request.args.get("namespace")
         applabel = request.args.get("applabel")
+        args_volume = request.args.get("isvolume")
+        if args_volume != "false":
+            args_volume = "true"
+        if namespace == None:
+            namespace = "tmpns"
 	f = open('docker-compose.yaml')
 	dataMap = yaml.load(f)
 	f.close()
@@ -81,16 +86,16 @@ def hello():
 			tmp_env.append(tmp_dict)
 			tmp_dict = {}
 	labels=[map(lambda x:x.split('=', 1) ,map(lambda x:x.replace('"',''), value["labels"])) for value in dataMap["services"].values() if "labels" in value]  if "services" in dataMap else []
-	mountpaths=[value["volumes"] if "volumes" in value else None for value in dataMap["services"].values()]  if "services" in dataMap else []
+	mountpaths=[value["volumes"] if "volumes" in value and args_volume == "true" else None for value in dataMap["services"].values()]  if "services" in dataMap else []
 	volumes = []
 	storages = []
 	counters = 0
 	for i in services:
-		if (dataMap["services"][i].has_key("volumes")):
+		if (dataMap["services"][i].has_key("volumes")) and args_volume == "true":
 			volumes.append("volumes" + str(counters))
 			storages.append("100Mi")
 			counters = counters + 1
-		else:
+                else:
 			volumes.append(None)
 			storages.append(None)
 			counters = counters + 1

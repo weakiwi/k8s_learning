@@ -1,108 +1,83 @@
 version: '2'
 services:
-  haproxy:
-    image: daocloud.io/daocloud/haproxy-redis:v2
+  rocketmqnamesrv1:
     labels:
-      - "io.daocloud.dce.service.role=proxy"
-      - "io.daocloud.dce.service.console=true"
-      - io.daocloud.dce.compose.placement.constraints=["node.labels.redis == redis"]
-    ports:
-      - "6379"
-    command: haproxy -f /usr/local/etc/haproxy/haproxy.cfg
-    restart: unless-stopped
-    cpu_quota: 50000
-    environment:
-      - APPNAME={{ appname }}
-      - REDIS_AUTH_PASSWORD={{ PASSWORD }}
-      - STARTORDER=7
-  master:
-    image: daocloud.io/daocloud/redis:ha
-    command: --appendonly yes --masterauth {{ PASSWORD }} --requirepass {{ PASSWORD }}
-    labels:
-      - "io.daocloud.dce.service.role=master"
-      - "io.daocloud.dce.compose.endpoint-spec.mode=dnsrr"
-      - io.daocloud.dce.compose.placement.constraints=["node.labels.servicepool1 == servicepool1", "node.labels.redis == redis"]
+      io.daocloud.dce.compose.endpoint-spec.mode: dnsrr
     volumes:
-      - /data
-    restart: unless-stopped
-    cpu_quota: 80000
+    - /data
+    image: registry.cn-hangzhou.aliyuncs.com/weakiwi/rocketmq_docker
+    ports:
+    - 9876
     environment:
-      - STARTORDER=0
-      - MAXMEMORY={{maxmemory}}
-  slave:
-    image: daocloud.io/daocloud/redis:ha
+    - ROCKETMQ_ROLE=namesrv
+    - SERVICENAME=rocketmqnamesrv1
+  rocketmqnamesrv2:
     labels:
-      - "io.daocloud.dce.service.role=slave"
-      - "io.daocloud.dce.compose.endpoint-spec.mode=dnsrr"
-      - io.daocloud.dce.compose.placement.constraints=["node.labels.servicepool2 == servicepool2", "node.labels.redis == redis"]
+      io.daocloud.dce.compose.endpoint-spec.mode: dnsrr
     volumes:
-      - /data
-    command: redis-server --slaveof {{appname}}_master 6379 --appendonly yes --masterauth {{ PASSWORD }} --requirepass {{ PASSWORD }}
-    restart: unless-stopped
-    cpu_quota: 50000
+    - /data
+    image: registry.cn-hangzhou.aliyuncs.com/weakiwi/rocketmq_docker
+    ports:
+    - 9876
     environment:
-      - STARTORDER=1
-      - MAXMEMORY={{maxmemory}}
-  slave1:
-    image: daocloud.io/daocloud/redis:ha
+    - ROCKETMQ_ROLE=namesrv
+    - SERVICENAME=rocketmqnamesrv2
+  amaster:
     labels:
-      - "io.daocloud.dce.service.role=slave"
-      - "io.daocloud.dce.compose.endpoint-spec.mode=dnsrr"
-      - io.daocloud.dce.compose.placement.constraints=["node.labels.servicepool3 == servicepool3", "node.labels.redis == redis"]
+      io.daocloud.dce.compose.endpoint-spec.mode: dnsrr
+      # io.daocloud.dce.compose.placement.constraints: '["node.labels.rocketmqpool1==rocketmqpool1"]'
     volumes:
-      - /data
-    command: redis-server --slaveof {{appname}}_master 6379 --appendonly yes --masterauth {{ PASSWORD }} --requirepass {{ PASSWORD }}
-    restart: unless-stopped
-    cpu_quota: 50000
-    environment:
-      - STARTORDER=2
-      - MAXMEMORY={{maxmemory}}
-  sentinel0:
-    image: daocloud.io/daocloud/redis-sentinel:v2
-    labels:
-      - io.daocloud.dce.compose.placement.constraints=["node.labels.servicepool1 == servicepool1", "node.labels.redis == redis"]
+    - /data
+    image: registry.cn-hangzhou.aliyuncs.com/weakiwi/rocketmq_docker
     ports:
-      - "26379"
+    - 2379
     environment:
-      - APPNAME={{ appname }}
-      - REDIS_AUTH_PASSWORD={{ PASSWORD }}
-      - STARTORDER=3
-    restart: unless-stopped
-    cpu_quota: 50000
-  sentinel1:
-    image: daocloud.io/daocloud/redis-sentinel:v2
+    - ROCKETMQ_ROLE=broker-a
+    - SERVICENAME=amaster
+  aslave:
     labels:
-      - io.daocloud.dce.compose.placement.constraints=["node.labels.servicepool2 == servicepool2", "node.labels.redis == redis"]
+      io.daocloud.dce.compose.endpoint-spec.mode: dnsrr
+      # io.daocloud.dce.compose.placement.constraints: '["node.labels.rocketmqpool1==rocketmqpool1"]'
+    volumes:
+    - /data
+    image: registry.cn-hangzhou.aliyuncs.com/weakiwi/rocketmq_docker
     ports:
-      - "26379"
+    - 2379
     environment:
-      - APPNAME={{ appname }}
-      - REDIS_AUTH_PASSWORD={{ PASSWORD }}
-      - STARTORDER=4
-    restart: unless-stopped
-    cpu_quota: 50000
-  sentinel2:
-    image: daocloud.io/daocloud/redis-sentinel:v2
+    - ROCKETMQ_ROLE=broker-a-slave
+    - SERVICENAME=aslave
+  bmaster:
     labels:
-      - io.daocloud.dce.compose.placement.constraints=["node.labels.servicepool3 == servicepool3", "node.labels.redis == redis"]
+      io.daocloud.dce.compose.endpoint-spec.mode: dnsrr
+      # io.daocloud.dce.compose.placement.constraints: '["node.labels.rocketmqpool1==rocketmqpool1"]'
+    volumes:
+    - /data
+    image: registry.cn-hangzhou.aliyuncs.com/weakiwi/rocketmq_docker
     ports:
-      - "26379"
+    - 2379
     environment:
-      - APPNAME={{ appname }}
-      - REDIS_AUTH_PASSWORD={{ PASSWORD }}
-      - STARTORDER=5
-    restart: unless-stopped
-    cpu_quota: 50000
-  exporter:
-    image: daocloud.io/daocloud/servicebroker-exporter
+    - ROCKETMQ_ROLE=broker-b
+    - SERVICENAME=bmaster
+  bslave:
     labels:
-      - "io.daocloud.dce.service.role=exporter"
-    environment:
-      - STARTORDER=6
-      - APPTYPE=redis-ha
-      - APPNAME={{ appname }}
-      - HOSTS=redis:master:master:6379,redis:slave:slave:6379,sentinel:sentinel:sentinel:26379,haproxy:haproxy:haproxy:6379 # host=type:role:host:port
-      - USERNAME=redis_has_no_user
-      - PASSWORD={{ PASSWORD }}
+      io.daocloud.dce.compose.endpoint-spec.mode: dnsrr
+      # io.daocloud.dce.compose.placement.constraints: '["node.labels.rocketmqpool1==rocketmqpool1"]'
+    volumes:
+    - /data
+    image: registry.cn-hangzhou.aliyuncs.com/weakiwi/rocketmq_docker
     ports:
-      - '9120'
+    - 2379
+    environment:
+    - ROCKETMQ_ROLE=broker-b-slave
+    - SERVICENAME=bslave
+  rocketmq-console-ng:
+    labels:
+      io.daocloud.dce.compose.endpoint-spec.mode: dnsrr
+      # io.daocloud.dce.compose.placement.constraints: '["node.labels.rocketmqpool1==rocketmqpool1"]'
+    volumes:
+    - /data
+    image: styletang/rocketmq-console-ng
+    ports:
+    - 8080
+    environment:
+    - JAVA_OPTS=-Drocketmq.namesrv.addr=rocketmqnamesrv1:9876;rocketmqnamesrv2:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false

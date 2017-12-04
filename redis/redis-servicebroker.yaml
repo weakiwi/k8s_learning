@@ -1,0 +1,463 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{clustername}}pvcs001
+  namespace: {{usernamespace}}
+  annotations:
+    volume.beta.kubernetes.io/storage-class: {{storageclass}}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{volumesize}}Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{clustername}}pvcs002
+  namespace: {{usernamespace}}
+  annotations:
+    volume.beta.kubernetes.io/storage-class: {{storageclass}}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{volumesize}}Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{clustername}}pvcs003
+  namespace: {{usernamespace}}
+  annotations:
+    volume.beta.kubernetes.io/storage-class: {{storageclass}}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{volumesize}}Gi
+---
+kind: StatefulSet
+apiVersion: apps/v1beta1
+metadata:
+  name: {{clustername}}haproxy
+  namespace: {{usernamespace}}
+spec:
+  serviceName: {{clustername}}haproxy
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{clustername}}haproxy
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+            {
+                "name": "init-rabbitmq-first",
+                "image": "busybox",
+                "command": ["sh", "-c", "until nslookup {{clustername}}slave1; do echo waiting for {{clustername}}slave1; sleep 2; done;"]
+            }
+        ]'
+
+    spec:
+      containers:
+      - name: {{clustername}}haproxy
+        imagePullPolicy: IfNotPresent
+        image: daocloud.io/daocloud/haproxy-redis:v2-k1
+        env:
+        - name : REDIS_AUTH_PASSWORD
+          value: {{PASSWORD}}
+        - name : STARTORDER
+          value: "7"
+        - name : APPNAME
+          value: "{{clustername}}"
+        resources:
+          requests:
+            cpu: 50m
+            memory: {{request_memory}}Mi
+          limits:
+            cpu: 50m
+            memory: {{limit_memory}}Mi
+      restartPolicy: Always 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{clustername}}haproxy
+  namespace: {{usernamespace}}
+  labels:
+    io.daocloud.service.role: "master"
+    io.daocloud.service.console: "true"
+    app: {{clustername}}haproxy
+spec:
+  ports:
+  - port: 6379
+    name: {{clustername}}haproxy
+    protocol: TCP
+    targetPort: 6379
+  type: NodePort
+  selector:
+    app: {{clustername}}haproxy
+---
+kind: StatefulSet
+apiVersion: apps/v1beta1
+metadata:
+  name: {{clustername}}master
+  namespace: {{usernamespace}}
+spec:
+  serviceName: {{clustername}}master
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{clustername}}master
+    spec:
+      volumes:
+      - name: master
+        persistentVolumeClaim:
+          claimName: {{clustername}}pvcs001
+      containers:
+      - name: redis
+        imagePullPolicy: IfNotPresent
+        image: daocloud.io/daocloud/redis:ha-k1
+        env:
+        - name : STARTORDER
+          value: "0"
+        - name: MAXMEMORY
+          value: "{{maxmemory}}"
+        resources:
+          requests:
+            cpu: 50m
+            memory: {{request_memory}}Mi
+          limits:
+            cpu: 50m
+            memory: {{limit_memory}}Mi
+        volumeMounts:
+        - name: master
+          mountPath: "/data"
+        command: ["bash", "-c"]
+        args: ["/usr/local/bin/docker-entrypoint.sh --appendonly yes --masterauth {{PASSWORD}} --requirepass {{PASSWORD}}"]
+      restartPolicy: Always 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{clustername}}master
+  namespace: {{usernamespace}}
+  labels:
+    app: {{clustername}}master
+spec:
+  ports:
+  - port: 6379
+    name: {{clustername}}master
+    protocol: TCP
+    targetPort: 6379
+  clusterIP: None
+  selector:
+    app: {{clustername}}master
+---
+kind: StatefulSet
+apiVersion: apps/v1beta1
+metadata:
+  name: {{clustername}}slave0
+  namespace: {{usernamespace}}
+spec:
+  serviceName: {{clustername}}slave0
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{clustername}}slave0
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+            {
+                "name": "init-rabbitmq-first",
+                "image": "busybox",
+                "command": ["sh", "-c", "until nslookup {{clustername}}master; do echo waiting for masterr; sleep 2; done;"]
+            }
+        ]'
+
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - {{clustername}}master
+              topologyKey: "kubernetes.io/hostname"
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - {{clustername}}slave1
+              topologyKey: "kubernetes.io/hostname"
+      volumes:
+      - name: slave0
+        persistentVolumeClaim:
+          claimName: {{clustername}}pvcs002
+      containers:
+      - name: redis
+        imagePullPolicy: IfNotPresent
+        image: daocloud.io/daocloud/redis:ha-k1
+        volumeMounts:
+        - name: slave0
+          mountPath: "/data"
+        command: ["bash", "-c"]
+        args: ["/usr/local/bin/docker-entrypoint.sh redis-server --slaveof {{clustername}}master 6379 --appendonly yes --masterauth {{PASSWORD}} --requirepass {{PASSWORD}}"]
+        env:
+        - name : REDIS_AUTH_PASSWORD
+          value: "{{PASSWORD}}"
+        - name: MAXMEMORY
+          value: "{{maxmemory}}"
+        resources:
+          requests:
+            cpu: 50m
+            memory: {{request_memory}}Mi
+          limits:
+            cpu: 50m
+            memory: {{limit_memory}}Mi
+      restartPolicy: Always 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{clustername}}slave
+  namespace: {{usernamespace}}
+  labels:
+    app: {{clustername}}slave
+spec:
+  ports:
+  - port: 6379
+    name: {{clustername}}slave
+    protocol: TCP
+    targetPort: 6379
+
+  clusterIP: None
+  selector:
+    app: {{clustername}}slave0
+---
+kind: StatefulSet
+apiVersion: apps/v1beta1
+metadata:
+  name: {{clustername}}slave1
+  namespace: {{usernamespace}}
+spec:
+  serviceName: {{clustername}}slave1
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{clustername}}slave1
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+            {
+                "name": "init-rabbitmq-first",
+                "image": "busybox",
+                "command": ["sh", "-c", "until nslookup {{clustername}}slave; do echo waiting for {{clustername}}slave; sleep 2; done;"]
+            }
+        ]'
+
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - {{clustername}}slave0
+              topologyKey: "kubernetes.io/hostname"
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - {{clustername}}master
+              topologyKey: "kubernetes.io/hostname"
+      volumes:
+      - name: {{clustername}}slave1
+        persistentVolumeClaim:
+          claimName: {{clustername}}pvcs003
+      containers:
+      - name: redis
+        imagePullPolicy: IfNotPresent
+        image: daocloud.io/daocloud/redis:ha-k1
+        volumeMounts:
+        - name: {{clustername}}slave1
+          mountPath: "/data"
+        command: ["bash", "-c"]
+        args: ["/usr/local/bin/docker-entrypoint.sh redis-server --slaveof {{clustername}}master 6379 --appendonly yes --masterauth {{PASSWORD}} --requirepass {{PASSWORD}}"]
+        env:
+        - name : REDIS_AUTH_PASSWORD
+          value: "{{PASSWORD}}"
+        - name: MAXMEMORY
+          value: "{{maxmemory}}"
+        resources:
+          requests:
+            cpu: 50m
+            memory: {{request_memory}}Mi
+          limits:
+            cpu: 50m
+            memory: {{limit_memory}}Mi
+      restartPolicy: Always 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{clustername}}slave1
+  namespace: {{usernamespace}}
+  labels:
+    app: {{clustername}}slave1
+spec:
+  ports:
+  - port: 6379
+    name: {{clustername}}slave1
+    protocol: TCP
+    targetPort: 6379
+  clusterIP: None
+  selector:
+    app: {{clustername}}slave1
+---
+kind: StatefulSet
+apiVersion: apps/v1beta1
+metadata:
+  name: {{clustername}}sentinel
+  namespace: {{usernamespace}}
+spec:
+  serviceName: {{clustername}}sentinel
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: {{clustername}}sentinel
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+            {
+                "name": "init-rabbitmq-first",
+                "image": "busybox",
+                "command": ["sh", "-c", "until nslookup {{clustername}}slave1; do echo waiting for {{clustername}}slave1; sleep 2; done;"]
+            }
+        ]'
+
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - {{clustername}}sentinel
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: redis
+        imagePullPolicy: IfNotPresent
+        image: daocloud.io/daocloud/redis-sentinel:v2-k1
+        env:
+        - name : REDIS_AUTH_PASSWORD
+          value: "{{PASSWORD}}"
+        - name : APPNAME
+          value: "{{clustername}}"
+        resources:
+          requests:
+            cpu: 50m
+            memory: {{request_memory}}Mi
+          limits:
+            cpu: 50m
+            memory: {{limit_memory}}Mi
+      restartPolicy: Always 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel
+  namespace: {{usernamespace}}
+  labels:
+    app: {{clustername}}sentinel
+spec:
+  ports:
+  - port: 26379
+    name: {{clustername}}sentinel
+    protocol: TCP
+    targetPort: 26379
+  clusterIP: None
+  selector:
+    app: {{clustername}}sentinel
+ ---
+ apiVersion: extensions/v1beta1
+ kind: Deployment
+ metadata:
+   name: exporter
+   namespace: {{usernamespace}}
+   labels:
+     app: exporter
+ spec:
+   replicas: 1
+   template:
+     metadata:
+       labels:
+         app: exporter
+       annotations:
+         pod.beta.kubernetes.io/init-containers: '[
+             {
+                 "name": "init-rabbitmq",
+                 "image": "daocloud.io/daocloud/nslookup",
+                 "args": ["{{clustername}}haproxy"]
+             }
+         ]'
+     spec:
+       terminationGracePeriodSeconds: 60
+       containers:
+       - name: exporter
+         image: daocloud.io/daocloud/sexporter:wjx3
+         env: 
+         - name : APPTYPE
+           value: "redis-ha"
+         - name : APPNAME
+           value: "{{usernamespace}}"
+         - name : HOSTS
+           value: "redis:master:master:6379,redis:slave:slave:6379,redis:slave:{{clustername}}slave1:6379,redis:sentinel:sentinel-0:26379,redis:sentinel:sentinel-1:26379,redis:sentinel:sentinel-2:26379"
+         - name : USERNAME
+           value: "redis_has_no_user"
+         - name : PASSWORD
+           value: "{{PASSWORD}}"
+         ports:
+         - containerPort: 9120
+         resources:
+           requests:
+            cpu: 50m
+            memory: {{request_memory}}Mi
+           limits:
+             cpu: 50m
+             memory: {{limit_memory}}Mi
+       restartPolicy: Always  
+ ---
+ apiVersion: v1
+ kind: Service
+ metadata:
+   name: exporter
+   namespace: {{usernamespace}}
+   labels:
+     io.daocloud.service.role: "exporter"
+     app: exporter
+ spec:
+   ports:
+   - port: 9120
+     name: exporter
+     protocol: TCP
+     targetPort: 9120
+   clusterIP: None
+   selector:
+     app: exporter

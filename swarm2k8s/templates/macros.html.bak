@@ -63,23 +63,23 @@ spec:
       - name: {{ name }}
         imagePullPolicy: IfNotPresent
         image: {{ image }}
-        {% if command %}
-        command: ["{{ command|convert_command }}"]
-        {% endif %}
+	{% if command %}
+	command: ["{{ command|convert_command }}"]
+	{% endif %}
         {% if volumes[1] %}
         {% for i in volumes[1] %}
-        volumeMounts:
-        - name: {{ name }}
-          mountPath: "{{ i }}"
-        {% endfor %}
-        {% endif %}
+	volumeMounts:
+	- name: {{ name }}
+	  mountPath: "{{ i }}"
+	{% endfor %}
+	{% endif %}
         {% if environment %}
-        env:
-        {% for i in environment %}
-        - name: {{ i }}
-          value: "{{ environment[i] }}"
-        {% endfor %}
-        {% endif %}
+	env:
+	{% for i in environment %}
+	- name: {{ i }}
+	  value: "{{ environment[i] }}"
+	{% endfor %}
+	{% endif %}
         {% if volumes[0]  %}
       volumes:
       - name: {{ name }}
